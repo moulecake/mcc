@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Système d'Umbriel</title>
+<style>
+  :root {
+    --bg: #080b12; --bg-2: #0e1320;
+    --surface: #121a2b; --surface-2: #17213a;
+    --line: #2a3654; --text: #e8ecf6; --muted: #aab4cc;
+    --accent: #7fe7ff; --sep: #5a6a8f;
+    --c-uranus: #6fdcf0; --c-ariel: #c9a7ff; --c-umbriel: #ff8fb1;
+    --c-titania: #f3f7ff; --c-oberon: #ffb86b; --c-sun: #5b8dff;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif; color: var(--text);
+    background:
+      radial-gradient(900px 400px at 85% -10%, rgba(127,231,255,.14), transparent 60%),
+      radial-gradient(700px 400px at 0% 110%, rgba(147,120,255,.12), transparent 60%), var(--bg);
+    display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 10px;
+    padding: 12px clamp(10px, 1.6vw, 24px); height: 100dvh; min-height: 600px;
+  }
+  .sr { position: absolute; left: -999px; width: 1px; height: 1px; overflow: hidden; }
+
+  header { display: flex; align-items: center; justify-content: space-between; gap: 10px 20px; flex-wrap: wrap; }
+  .title { display: flex; align-items: baseline; gap: 6px 18px; flex-wrap: wrap; }
+  h1 {
+    margin: 0; font-size: clamp(18px, 2.4vh, 26px); font-weight: 700; letter-spacing: .02em;
+    font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+    background: linear-gradient(90deg, #fff, var(--accent)); -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .sub { margin: 0; color: var(--muted); font-size: 13px; }
+
+  .btn {
+    font: inherit; font-size: 14px; color: var(--text); background: var(--surface-2);
+    border: 1px solid var(--sep); border-radius: 10px; height: 34px; padding: 0 12px;
+    cursor: pointer; display: inline-flex; align-items: center; gap: 6px; text-decoration: none;
+  }
+  .btn:hover { border-color: var(--accent); }
+  .btn:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+  .btn.primary { background: #1d3a5c; border-color: var(--accent); font-weight: 700; }
+
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) 390px; grid-template-rows: minmax(0, 1fr); gap: 14px; min-height: 0; }
+  .stage { min-width: 0; min-height: 0; display: grid; place-items: center; overflow: hidden; }
+  .frame { width: var(--side, 420px); height: var(--side, 420px); }
+  canvas { width: 100%; height: 100%; display: block; }
+
+  .panel { min-height: 0; overflow: auto; display: grid; gap: 10px; align-content: start; padding: 2px; }
+  .readout {
+    padding: 10px 14px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line);
+    font-weight: 700; font-size: 15px; line-height: 1.35;
+  }
+  .readout small { display: block; color: var(--muted); font-weight: 500; font-size: 12.5px; }
+  fieldset { margin: 0; padding: 10px 14px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+  legend { padding: 0 6px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+  .row { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: end; }
+  .row label { display: grid; gap: 3px; font-size: 11.5px; color: var(--muted); letter-spacing: .05em; text-transform: uppercase; }
+  input[type=number], select {
+    font: inherit; font-size: 14px; color: var(--text); background: var(--surface-2);
+    border: 1px solid var(--sep); border-radius: 10px; height: 34px; padding: 0 8px;
+  }
+  input[type=number] { width: 84px; }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  .hour { margin-top: 8px; display: grid; gap: 3px; font-size: 11.5px; color: var(--muted); letter-spacing: .05em; text-transform: uppercase; }
+  .hour b { color: var(--text); letter-spacing: 0; text-transform: none; font-size: 13px; }
+
+  .seg { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  .seg label { position: relative; }
+  .seg input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+  .seg span {
+    display: inline-flex; align-items: center; height: 34px; padding: 0 12px; border-radius: 10px; font-size: 14px;
+    background: var(--surface-2); border: 1px solid var(--sep);
+  }
+  .seg input:checked + span { border-color: var(--accent); background: #1d3a5c; font-weight: 700; }
+  .seg input:checked + span::before { content: "✓ "; }
+  .seg input:focus-visible + span { outline: 3px solid #fff; outline-offset: 2px; }
+  progress { width: 100%; height: 8px; margin-top: 10px; accent-color: var(--accent); }
+
+  .bodies { display: grid; gap: 4px; padding: 8px 12px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); font-size: 13px; }
+  .bodies div { display: grid; grid-template-columns: 14px 1fr auto; gap: 8px; align-items: center; }
+  .bodies i { width: 12px; height: 12px; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 1px rgba(255,255,255,.35); }
+  .bodies em { font-style: normal; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .opt { font-size: 13px; color: var(--muted); display: flex; gap: 8px; align-items: center; padding-left: 4px; }
+  .opt input { width: 18px; height: 18px; accent-color: var(--accent); }
+
+  #info { margin: 0; padding: 6px 12px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); font-size: 12.5px; color: var(--muted); }
+  #info b { color: var(--accent); }
+
+  @media (max-width: 860px) {
+    body { height: auto; min-height: 100dvh; }
+    .layout { grid-template-columns: 1fr; grid-template-rows: auto; }
+    .panel { overflow: visible; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="title">
+    <h1>Système d'Umbriel</h1>
+    <p class="sub">Vue à plat · Uranus au centre · le soleil (naine bleue) éclaire depuis l'extérieur du cadre</p>
+  </div>
+  <a class="btn" id="back" href="calendrier-umbriel.html">← Calendrier</a>
+</header>
+
+<main class="layout">
+  <section class="stage" id="stage" aria-label="Schéma du système">
+    <div class="frame" id="frame"><canvas id="cv" role="img" aria-label="Schéma du système d'Umbriel"></canvas></div>
+  </section>
+
+  <aside class="panel" aria-label="Réglages">
+    <div class="readout" id="readout"></div>
+
+    <fieldset>
+      <legend>Instant fixe</legend>
+      <div class="row">
+        <label>Année <input id="f-an" type="number" step="1"></label>
+        <label>Mois <select id="f-mois"></select></label>
+        <label>Jour <input id="f-jour" type="number" min="1" max="30" step="1"></label>
+      </div>
+      <label class="hour">Heure du jour (0 à 30 h) <b id="f-heure-txt"></b>
+        <input id="f-heure" type="range" min="0" max="29.5" step="0.5" value="0">
+      </label>
+      <div class="row" style="margin-top:8px">
+        <button type="button" class="btn" id="f-prev">◀ Jour</button>
+        <button type="button" class="btn" id="f-next">Jour ▶</button>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Mini-animation</legend>
+      <div class="seg" role="radiogroup" aria-label="Durée de l'animation">
+		<label><input type="radio" name="duree" value="1" checked><span>1 jour</span></label>
+        <label><input type="radio" name="duree" value="30" checked><span>1 mois</span></label>
+        <label><input type="radio" name="duree" value="180"><span>6 mois</span></label>
+        <label><input type="radio" name="duree" value="300"><span>1 an</span></label>
+      </div>
+      <div class="row">
+        <button type="button" class="btn primary" id="play">▶ Lancer</button>
+        <label>Vitesse
+          <select id="vitesse" aria-label="Vitesse de l'animation">
+			<option value="0.01">× 0.01</option>
+			<option value="0.1">× 0.1</option>
+		    <option value="0.25" selected>× 0.25</option>
+            <option value="0.5">× 0,5</option>
+            <option value="1">× 1 (1jour/s)</option>
+         
+          </select>
+        </label>
+      </div>
+      <progress id="prog" max="1" value="0" aria-label="Avancement de l'animation"></progress>
+    </fieldset>
+
+    <div class="bodies" id="bodies" aria-label="Légende"></div>
+    <label class="opt"><input type="checkbox" id="noms" checked> Afficher les noms sur le schéma</label>
+  </aside>
+</main>
+
+<p id="info"></p>
+<div class="sr" id="sr" aria-live="polite"></div>
+
+<script>
+/* ╔══════════════════════════════════════════════════════════════════════╗
+   ║   RÉGLAGES — à garder identiques à ceux de calendrier-umbriel.html    ║
+   ╚══════════════════════════════════════════════════════════════════════╝ */
+const ANNEE_REFERENCE = 1;      // ← même valeur que dans le calendrier (peut aussi arriver par l'adresse : ?ref=…)
+const JOURS_PAR_AN    = 300;
+const DUREE_JOUR_H    = 30;
+
+/* Périodes en jours d'Umbriel (Umbriel = 1 jour : c'est lui qui fixe la durée du jour) */
+const PERIODE = { ariel: 0.6, umbriel: 1, titania: 2.1, oberon: 3.2 };
+
+/* Soleil : tour complet du cadre en 1 an, dans le sens horaire.
+   Il est à DROITE au 1er pic d'éclipse (≈ Mois 2 jour 2) et à GAUCHE au 2e (≈ Mois 7 jour 2).
+   Valeur = nombre de jours depuis le début de l'année (0 = Mois 1, jour 1, 0 h). */
+const SOLEIL_A_DROITE_AU_JOUR = 31;
+
+/* Heure (0–30) à laquelle Umbriel passe derrière Uranus par rapport au soleil (éclipse de l'après-midi) */
+const HEURE_ECLIPSE = 21;
+
+/* Animation : 1 jour / 0,5 s à vitesse × 1. Un corps qui fait plus de N tours par seconde est masqué pendant l'animation. */
+const JOURS_PAR_S_X1 = 2;
+const SEUIL_MASQUAGE_TOURS_PAR_S = 1;
+/* ═════════════════════════════════════════════════════════════════════════ */
+
+const MONTHS = ["Perce-Glace","Bourgeons","Haut-Soleil","Canicule","Moissons","Brumes","Vendanges","Premières Neiges","Gel Éternel","Longue Nuit"];
+const mod = (a, n) => ((a % n) + n) % n;
+const pad = n => String(n).padStart(2, "0");
+const q = new URLSearchParams(location.search);
+const REF = q.has("ref") && Number.isFinite(+q.get("ref")) ? Math.trunc(+q.get("ref")) : ANNEE_REFERENCE;
+
+/* ----- Corps célestes ----- */
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const BODIES = [
+  { id: "ariel",   nom: "Ariel",   col: css("--c-ariel"),   R: .25, r: .022, P: PERIODE.ariel,   rel: t => 360 * t / PERIODE.ariel },
+  { id: "umbriel", nom: "Umbriel", col: css("--c-umbriel"), R: .41, r: .024, P: PERIODE.umbriel, rel: t => 180 + 360 * (t - HEURE_ECLIPSE / DUREE_JOUR_H) / PERIODE.umbriel },
+  { id: "titania", nom: "Titania", col: css("--c-titania"), R: .63, r: .034, P: PERIODE.titania, rel: t => 360 * t / PERIODE.titania },
+  { id: "oberon",  nom: "Obéron",  col: css("--c-oberon"),  R: .84, r: .031, P: PERIODE.oberon,  rel: t => 360 * t / PERIODE.oberon }
+];
+BODIES.forEach(b => b.alpha = 1);
+const URANUS = { nom: "Uranus", col: css("--c-uranus"), r: .085 };
+
+/* Phase (mêmes seuils que le calendrier) : angle depuis la direction du soleil */
+function phaseName(deg) {
+  const a = mod(deg, 360);
+  if (a < 25 || a >= 335) return "Nouvelle Lune";
+  if (a >= 65 && a < 115) return "Premier Quartier";
+  if (a >= 155 && a < 205) return "Pleine Lune";
+  if (a >= 245 && a < 295) return "Dernier Quartier";
+  return "—";
+}
+
+/* ----- Temps : t = jours écoulés depuis Mois 1 / Jour 1 / 0 h de l'année de référence ----- */
+const absDay = (y, m, d) => (y - REF) * JOURS_PAR_AN + m * 30 + (d - 1);
+function dateFromT(t) {
+  const a = Math.floor(t), r = mod(a, JOURS_PAR_AN);
+  return { y: REF + Math.floor(a / JOURS_PAR_AN), m: Math.floor(r / 30), d: (r % 30) + 1, h: (t - a) * DUREE_JOUR_H };
+}
+const fmtH = h => { let m = Math.round((h % 1) * 60), hh = Math.floor(h); if (m === 60) { m = 0; hh++; } return `${hh}h${pad(m)}`; };
+const sunAngle = t => 90 + 360 * (mod(t, JOURS_PAR_AN) - SOLEIL_A_DROITE_AU_JOUR) / JOURS_PAR_AN;   // degrés, 0 = haut, sens horaire
+const DIRS = ["en haut", "en haut à droite", "à droite", "en bas à droite", "en bas", "en bas à gauche", "à gauche", "en haut à gauche"];
+const dirName = a => DIRS[Math.round(mod(a, 360) / 45) % 8];
+
+/* ----- Éléments ----- */
+const $ = id => document.getElementById(id);
+const cv = $("cv"), ctx = cv.getContext("2d");
+const fAn = $("f-an"), fMois = $("f-mois"), fJour = $("f-jour"), fHeure = $("f-heure");
+MONTHS.forEach((n, i) => fMois.add(new Option(`${i + 1} · ${n}`, i)));
+
+/* ----- État ----- */
+let t = 0;
+const anim = { running: false, remaining: 0 };
+let dirty = true;
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const speedDaysPerS = () => JOURS_PAR_S_X1 * Number($("vitesse").value);
+const degPerS = b => 360 * speedDaysPerS() / b.P;
+const hiddenWhenPlaying = b => degPerS(b) > SEUIL_MASQUAGE_TOURS_PAR_S * 360;
+
+/* Départ : paramètres d'adresse ?annee=&mois=&jour= (envoyés par le calendrier) */
+{
+  const y = q.has("annee") && Number.isFinite(+q.get("annee")) ? Math.trunc(+q.get("annee")) : REF;
+  const m = Math.min(10, Math.max(1, Math.trunc(+q.get("mois")) || 1)) - 1;
+  const d = Math.min(30, Math.max(1, Math.trunc(+q.get("jour")) || 1));
+  t = absDay(y, m, d);
+  $("back").href = "calendrier-umbriel.html?annee=" + encodeURIComponent(y);
+}
+
+/* ----- Dessin ----- */
+const STARS = Array.from({ length: 70 }, (_, i) => {
+  const s = Math.sin(i * 91.7) * 43758.5453, u = Math.sin(i * 12.9898 + 4.1) * 43758.5453, v = Math.sin(i * 78.233 + 1.7) * 43758.5453;
+  return [s - Math.floor(s), u - Math.floor(u), 0.5 + (v - Math.floor(v)) * 1.1, 0.15 + (s * 7 - Math.floor(s * 7)) * 0.35];
+});
+function roundRect(x, y, w, h, r) {
+  ctx.beginPath(); ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+}
+function draw() {
+  const dpr = window.devicePixelRatio || 1;
+  const W = cv.clientWidth, H = cv.clientHeight;
+  if (!W || !H) return;
+  if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+
+  const S = Math.min(W, H), cx = W / 2, cy = H / 2, half = S / 2 - 1, corner = S * 0.07;
+  const sa = sunAngle(t) * Math.PI / 180;
+  const dx = Math.sin(sa), dy = -Math.cos(sa), mx = Math.max(Math.abs(dx), Math.abs(dy));
+  const px = cx + dx / mx * half, py = cy + dy / mx * half;                      // point du cadre le plus proche du soleil
+
+  ctx.save();
+  roundRect(cx - half, cy - half, half * 2, half * 2, corner); ctx.clip();
+
+  // fond + étoiles
+  const bg = ctx.createRadialGradient(cx, cy, 0, cx, cy, S * 0.75);
+  bg.addColorStop(0, "#0d1426"); bg.addColorStop(1, "#04060c");
+  ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+  STARS.forEach(([x, y, r, a]) => { ctx.fillStyle = `rgba(220,230,255,${a})`; ctx.beginPath(); ctx.arc(cx - half + x * half * 2, cy - half + y * half * 2, r, 0, 7); ctx.fill(); });
+
+  // halo du soleil (bleu, diffus, collé au cadre)
+  const halo = ctx.createRadialGradient(px, py, 0, px, py, S * 0.95);
+  halo.addColorStop(0, "rgba(150,200,255,.95)");
+  halo.addColorStop(.12, "rgba(100,160,255,.62)");
+  halo.addColorStop(.35, "rgba(60,110,240,.28)");
+  halo.addColorStop(.7, "rgba(40,70,200,.07)");
+  halo.addColorStop(1, "rgba(40,70,200,0)");
+  ctx.fillStyle = halo; ctx.fillRect(0, 0, W, H);
+
+  // orbites
+  BODIES.forEach(b => {
+    ctx.beginPath(); ctx.arc(cx, cy, b.R * half, 0, Math.PI * 2);
+    ctx.strokeStyle = b.col; ctx.globalAlpha = 0.32; ctx.lineWidth = 1.5; ctx.stroke(); ctx.globalAlpha = 1;
+  });
+
+  // Uranus
+  const ur = URANUS.r * half;
+  ctx.save(); ctx.shadowColor = "rgba(111,220,240,.55)"; ctx.shadowBlur = ur * 0.9;
+  const ug = ctx.createRadialGradient(cx - ur * .3, cy - ur * .3, ur * .1, cx, cy, ur);
+  ug.addColorStop(0, "#a9f3ff"); ug.addColorStop(1, URANUS.col);
+  ctx.fillStyle = ug; ctx.beginPath(); ctx.arc(cx, cy, ur, 0, 7); ctx.fill(); ctx.restore();
+
+  const showNames = $("noms").checked;
+  ctx.font = "600 12px Inter, 'Segoe UI', system-ui, sans-serif"; ctx.textBaseline = "middle";
+  const label = (txt, x, y, r, alpha, color) => {
+    if (!showNames) return;
+    const left = x > cx + half * 0.7;
+    ctx.save(); ctx.globalAlpha = alpha * 0.95; ctx.textAlign = left ? "right" : "left";
+    ctx.shadowColor = "#000"; ctx.shadowBlur = 5; ctx.fillStyle = "#e8ecf6";
+    ctx.fillText(txt, x + (left ? -(r + 7) : r + 7), y); ctx.restore();
+  };
+  label(URANUS.nom, cx, cy + ur + 14, -ur + 7, 1, URANUS.col);
+
+  // lunes (position = direction du soleil + angle de phase du calendrier)
+  BODIES.forEach(b => {
+    if (b.alpha <= 0.01) return;
+    const a = (sunAngle(t) + b.rel(t)) * Math.PI / 180;
+    const x = cx + Math.sin(a) * b.R * half, y = cy - Math.cos(a) * b.R * half, r = b.r * half;
+    ctx.save(); ctx.globalAlpha = b.alpha; ctx.shadowColor = b.col; ctx.shadowBlur = r * 1.2;
+    ctx.fillStyle = b.col; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill(); ctx.restore();
+    label(b.nom, x, y, r, b.alpha);
+  });
+  ctx.restore();
+
+  // cadre : s'éclaire près du soleil
+  const fr = ctx.createRadialGradient(px, py, 0, px, py, S * 0.8);
+  fr.addColorStop(0, "#d6ebff"); fr.addColorStop(.35, "#6b9bff"); fr.addColorStop(1, "#2a3654");
+  roundRect(cx - half, cy - half, half * 2, half * 2, corner);
+  ctx.strokeStyle = fr; ctx.lineWidth = 2.5; ctx.stroke();
+}
+
+/* ----- Textes (lecture, légende, info) ----- */
+const bodiesBox = $("bodies");
+bodiesBox.innerHTML =
+  `<div style="--c:${URANUS.col}"><i></i><span>Uranus</span><em>planète</em></div>` +
+  BODIES.map(b => `<div style="--c:${b.col}"><i></i><span>${b.nom} <em>· ${String(b.P).replace(".", ",")} j</em></span><em id="ph-${b.id}"></em></div>`).join("");
+
+function updateTexts() {
+  const dt = dateFromT(t);
+  $("readout").innerHTML = `An ${dt.y} · Mois ${dt.m + 1} ${MONTHS[dt.m]} · jour ${dt.d} · ${fmtH(dt.h)}` +
+    `<small>Soleil ${dirName(sunAngle(t))}</small>`;
+  document.title = `Système d'Umbriel — An ${dt.y}, M${dt.m + 1} J${dt.d}`;
+  BODIES.forEach(b => { $("ph-" + b.id).textContent = b.id === "umbriel" ? "1 tour / jour" : phaseName(b.rel(t)); });
+  $("info").innerHTML = anim.running
+    ? `Animation en cours — les corps qui font plus d'1 tour par seconde sont <b>masqués</b> (${BODIES.filter(hiddenWhenPlaying).map(b => b.nom).join(", ") || "aucun à cette vitesse"}) ; ils reviennent à l'arrêt.`
+    : `Nouvelle Lune = lune du côté du soleil · Pleine Lune = à l'opposé. Les phases suivent celles du calendrier (valables à 0 h ; l'heure fait avancer les lunes).`;
+}
+function syncInputs() {
+  const dt = dateFromT(t);
+  fAn.value = dt.y; fMois.value = dt.m; fJour.value = dt.d; fHeure.value = Math.round(dt.h * 2) / 2;
+  $("f-heure-txt").textContent = fmtH(dt.h);
+}
+function announce() {            // résumé pour lecteurs d'écran (hors animation)
+  const dt = dateFromT(t);
+  const txt = `An ${dt.y}, mois ${dt.m + 1}, jour ${dt.d}, ${fmtH(dt.h)}. Soleil ${dirName(sunAngle(t))}. ` +
+    BODIES.filter(b => b.id !== "umbriel").map(b => `${b.nom} : ${phaseName(b.rel(t))}`).join(". ");
+  $("sr").textContent = txt; cv.setAttribute("aria-label", "Schéma du système d'Umbriel. " + txt);
+}
+
+/* ----- Contrôles : instant fixe ----- */
+function readFixed() {
+  stop();
+  const y = Math.trunc(Number(fAn.value)); if (!Number.isFinite(y)) return;
+  const m = Math.min(9, Math.max(0, +fMois.value || 0));
+  const d = Math.min(30, Math.max(1, Math.trunc(Number(fJour.value)) || 1));
+  t = absDay(y, m, d) + Number(fHeure.value) / DUREE_JOUR_H;
+  syncInputs(); updateTexts(); announce(); dirty = true;
+}
+[fAn, fMois, fJour, fHeure].forEach(c => c.addEventListener("input", readFixed));
+$("f-prev").addEventListener("click", () => { stop(); t -= 1; syncInputs(); updateTexts(); announce(); dirty = true; });
+$("f-next").addEventListener("click", () => { stop(); t += 1; syncInputs(); updateTexts(); announce(); dirty = true; });
+
+/* ----- Contrôles : animation ----- */
+const duree = () => Number(document.querySelector('input[name="duree"]:checked').value);
+function stop() {
+  if (!anim.running) return;
+  anim.running = false; $("play").textContent = "▶ Reprendre"; syncInputs(); updateTexts(); announce(); dirty = true;
+}
+$("play").addEventListener("click", () => {
+  if (anim.running) { stop(); return; }
+  if (anim.remaining <= 1e-9) anim.remaining = duree();
+  anim.running = true; $("play").textContent = "⏸ Pause"; updateTexts();
+});
+document.querySelectorAll('input[name="duree"]').forEach(r => r.addEventListener("change", () => {
+  stop(); anim.remaining = 0; $("prog").value = 0; $("play").textContent = "▶ Lancer";
+}));
+$("vitesse").addEventListener("change", () => { updateTexts(); });
+$("noms").addEventListener("change", () => { dirty = true; });
+
+/* ----- Boucle ----- */
+let last = performance.now(), uiTick = 0;
+function frame(now) {
+  const dt = Math.min(0.1, (now - last) / 1000); last = now;
+  if (anim.running) {
+    const adv = Math.min(anim.remaining, dt * speedDaysPerS());
+    t += adv; anim.remaining -= adv; dirty = true;
+    $("prog").value = 1 - anim.remaining / duree();
+    uiTick += dt;
+    if (uiTick > 0.1) { uiTick = 0; syncInputs(); updateTexts(); }
+    if (anim.remaining <= 1e-9) { anim.remaining = 0; anim.running = false; $("play").textContent = "▶ Rejouer"; syncInputs(); updateTexts(); announce(); }
+  }
+  BODIES.forEach(b => {
+    const target = (anim.running && hiddenWhenPlaying(b)) ? 0 : 1;
+    const next = reduceMotion ? target : b.alpha + Math.sign(target - b.alpha) * Math.min(Math.abs(target - b.alpha), dt * 4);
+    if (next !== b.alpha) { b.alpha = next; dirty = true; }
+  });
+  if (dirty) { dirty = false; draw(); }
+  requestAnimationFrame(frame);
+}
+
+/* ----- Taille : cadre carré qui tient dans l'écran ----- */
+function fit() {
+  const st = $("stage"), narrow = matchMedia("(max-width: 860px)").matches;
+  const side = narrow ? Math.min(st.clientWidth, window.innerHeight * 0.7) : Math.min(st.clientWidth, st.clientHeight);
+  $("frame").style.setProperty("--side", Math.max(240, Math.floor(side)) + "px"); dirty = true;
+}
+new ResizeObserver(fit).observe($("stage")); addEventListener("resize", fit);
+
+syncInputs(); updateTexts(); announce(); fit();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
