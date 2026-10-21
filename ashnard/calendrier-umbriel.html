@@ -1,1 +1,571 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Calendrier d'Umbriel</title>
+<style>
+  :root {
+    --bg: #080b12;
+    --bg-2: #0e1320;
+    --surface: #121a2b;
+    --surface-2: #17213a;
+    --line: #2a3654;
+    --text: #e8ecf6;
+    --muted: #aab4cc;          /* 8.5:1 sur --surface */
+    --accent: #7fe7ff;         /* Uranus */
+    --decade: #ffc247;         /* uniquement la fête de fin d'année */
+    --sep-decade: #8392b5;     /* séparation de décade : gris neutre, plein, 2 px */
+    --sep-month: #5a6a8f;      /* séparation de mois (même saison) : pointillé, 2 px, plus discret */
+    --titania: #f3f7ff;
+    --oberon: #ffb86b;
+    --ariel: #c9a7ff;
+    --disc-dark: #1b2438;
 
+    --spring: #86e6a8;
+    --summer: #ffc46b;
+    --autumn: #ff9f84;
+    --winter: #93c8ff;
+
+    --e-start-bg: #4d3d06;  --e-start-fg: #ffe9a0;
+    --e-peak-bg:  #7d1830;  --e-peak-fg:  #ffe4ea;
+    --e-end-bg:   #124a2e;  --e-end-fg:   #d6f7e4;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+    color: var(--text);
+    background:
+      radial-gradient(900px 400px at 85% -10%, rgba(127,231,255,.14), transparent 60%),
+      radial-gradient(700px 400px at 0% 110%, rgba(147,120,255,.12), transparent 60%),
+      var(--bg);
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    gap: 10px;
+    padding: 12px clamp(10px, 1.6vw, 24px);
+    height: 100dvh;
+    min-height: 640px;
+  }
+
+  .skip { position: absolute; left: -999px; }
+  .skip:focus { left: 12px; top: 8px; z-index: 10; background: #fff; color: #000; padding: 6px 10px; border-radius: 6px; }
+
+  /* ---------- En-tête ---------- */
+  header { display: flex; align-items: center; justify-content: space-between; gap: 10px 20px; flex-wrap: wrap; }
+  .title { display: flex; align-items: baseline; gap: 6px 18px; flex-wrap: wrap; }
+  h1 {
+    margin: 0; font-size: clamp(18px, 2.4vh, 26px); font-weight: 700; letter-spacing: .02em;
+    font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+    background: linear-gradient(90deg, #fff, var(--accent));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .sub { margin: 0; color: var(--muted); font-size: 13px; }
+  .sub b { color: var(--text); }
+
+  /* Sélecteur d'année */
+  .year { display: inline-flex; align-items: center; gap: 6px; }
+  .year label { font-size: 12px; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
+  .year input, .year button {
+    font: inherit; font-size: 14px; color: var(--text);
+    background: var(--surface-2); border: 1px solid var(--sep-month); border-radius: 10px;
+    height: 34px;
+  }
+  .year input { width: 96px; text-align: center; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .year button { min-width: 34px; padding: 0 10px; cursor: pointer; }
+  .year button:hover { border-color: var(--accent); }
+  .year input:focus-visible, .year button:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+
+  /* Boutons d'outils (ne modifient pas la mise en page : ils vivent dans l'en-tête) */
+  .tools { display: flex; align-items: center; gap: 8px 14px; flex-wrap: wrap; }
+  .btn {
+    font: inherit; font-size: 14px; color: var(--text); background: var(--surface-2);
+    border: 1px solid var(--sep-month); border-radius: 10px; height: 34px; padding: 0 12px;
+    cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn:hover { border-color: var(--accent); }
+  .btn:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+  .btn .ic-ariel { color: var(--ariel); }
+  .btn .ic-sys { color: var(--accent); }
+
+  /* Fenêtre Ariel (superposée : aucun impact sur la page) */
+  dialog {
+    width: min(620px, 94vw); padding: 0; color: var(--text); background: var(--surface);
+    border: 1px solid var(--sep-month); border-radius: 16px; box-shadow: 0 30px 80px rgba(0,0,0,.7);
+  }
+  dialog::backdrop { background: rgba(4,6,12,.72); }
+  .dlg-in { padding: 16px 18px 18px; display: grid; gap: 12px; }
+  .dlg-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .dlg-head h2 { margin: 0; font-size: 18px; font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif; }
+  .dlg-head h2 span { color: var(--ariel); }
+  .dlg-ctrl { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
+  .dlg-ctrl label { display: grid; gap: 3px; font-size: 11.5px; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+  dialog input, dialog select {
+    font: inherit; font-size: 14px; color: var(--text); background: var(--surface-2);
+    border: 1px solid var(--sep-month); border-radius: 10px; height: 34px; padding: 0 8px;
+  }
+  dialog input[type=number] { width: 92px; }
+  dialog input:focus-visible, dialog select:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+  .a-when { margin: 0; font-size: 13px; color: var(--muted); }
+  .a-when b { color: var(--text); }
+  .a-res { width: 100%; border-collapse: collapse; }
+  .a-res th, .a-res td { border: 1px solid var(--line); padding: 8px 12px; text-align: left; font-size: 14px; }
+  .a-res th { width: 110px; background: var(--surface-2); font-weight: 600; }
+  .a-res td { font-variant-numeric: tabular-nums; font-weight: 600; }
+  .a-bar { position: relative; height: 50px; }
+  .a-bar .track { position: absolute; left: 0; right: 0; top: 6px; height: 16px; background: var(--disc-dark); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .a-bar .seg { position: absolute; top: 0; bottom: 0; background: var(--ariel); opacity: .85; }
+  .a-bar .zen { position: absolute; top: 2px; width: 3px; height: 24px; background: #fff; border-radius: 2px; transform: translateX(-1px); }
+  .a-bar .tick { position: absolute; top: 30px; font-size: 11px; color: var(--muted); transform: translateX(-50%); font-variant-numeric: tabular-nums; }
+  .a-note { margin: 0; font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+  /* ---------- Tableau ---------- */
+  .wrap {
+    min-height: 0; overflow: auto;
+    background: linear-gradient(180deg, var(--surface), var(--bg-2));
+    border: 1px solid var(--line); border-radius: 16px;
+    box-shadow: 0 18px 40px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.04);
+  }
+  table { width: 100%; height: 100%; min-width: 880px; border-collapse: collapse; table-layout: fixed; }
+  th, td { border: 1px solid var(--line); padding: 0; text-align: center; }
+  thead th { background: var(--surface-2); font-weight: 600; position: sticky; top: 0; z-index: 2; }
+  thead tr.seasons th { height: 26px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; border-bottom-color: var(--line); }
+  thead tr.months th  { height: 34px; font-size: 12px; line-height: 1.15; }
+  thead tr.months th small { display: block; color: var(--muted); font-weight: 500; font-size: 10.5px; }
+  th.corner { width: 52px; font-size: 11px; color: var(--muted); }
+
+  .sp { --sc: var(--spring); } .su { --sc: var(--summer); }
+  .au { --sc: var(--autumn); } .wi { --sc: var(--winter); }
+  .seasons th { color: var(--sc); border-top: 3px solid var(--sc); }
+
+  tbody th {
+    background: var(--surface-2); color: var(--text);
+    font-size: clamp(10px, 1.5vh, 12px); font-weight: 600; font-variant-numeric: tabular-nums;
+  }
+
+  /* Hiérarchie des séparations (du plus fort au plus discret) :
+     1) saison  : 3 px plein, couleur de la saison
+     2) décade  : 2 px plein, gris neutre
+     3) mois    : 2 px pointillé, gris-bleu discret (entre mois d'une même saison)
+     4) jour    : 1 px plein très sombre                                          */
+  .season-start { border-left: 3px solid var(--sc, var(--accent)) !important; }
+  .msep { border-left: 2px dotted var(--sep-month); }
+  tbody tr.decade-end > * { border-bottom: 2px solid var(--sep-decade); }
+
+  tbody tr:hover > td { box-shadow: inset 0 0 0 100px rgba(255,255,255,.07); }
+
+  td { position: relative; cursor: default; }
+  td:focus-visible { outline: 3px solid #fff; outline-offset: -3px; z-index: 1; }
+
+  .cell { display: flex; align-items: center; justify-content: center; gap: clamp(6px, .9vw, 14px); height: 100%; }
+
+  /* Lunes dessinées en CSS : la forme (pas seulement la couleur) porte l'information */
+  .moon {
+    --lit: var(--titania); --ring: #cdd6ee;
+    width: clamp(9px, 1.9vh, 16px); height: clamp(9px, 1.9vh, 16px);
+    border-radius: 50%; border: 1.5px solid var(--ring); background: var(--disc-dark);
+    flex: none;
+  }
+  .moon.o { --lit: var(--oberon); --ring: var(--oberon); }
+  .moon.new  { background: transparent; }
+  .moon.q1   { background: linear-gradient(90deg, var(--disc-dark) 50%, var(--lit) 50%); }
+  .moon.full { background: var(--lit); box-shadow: 0 0 8px var(--lit); }
+  .moon.q3   { background: linear-gradient(90deg, var(--lit) 50%, var(--disc-dark) 50%); }
+  .slot { width: clamp(9px, 1.9vh, 16px); height: clamp(9px, 1.9vh, 16px); display: grid; place-items: center; }
+  .slot i { width: 3px; height: 3px; border-radius: 50%; background: #3a4666; }
+
+  /* Éclipses : couleur + glyphe + (pic) bordure, jamais la couleur seule */
+  td.e-start { background: var(--e-start-bg); color: var(--e-start-fg); }
+  td.e-peak  { background: var(--e-peak-bg);  color: var(--e-peak-fg); box-shadow: inset 0 0 0 2px #ff7b95; }
+  td.e-end   { background: var(--e-end-bg);   color: var(--e-end-fg); }
+  .ec { position: absolute; left: 4px; top: 50%; transform: translateY(-50%); font-size: clamp(9px, 1.4vh, 12px); font-weight: 700; line-height: 1; }
+  .fete { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); color: var(--decade); font-size: 14px; }
+  td.is-fete { background: rgba(255,194,71,.16); }
+
+  /* ---------- Pied : légende + infos ---------- */
+  footer { display: grid; gap: 8px; font-size: 12.5px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; color: var(--muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .chip { padding: 2px 8px; border-radius: 6px; font-weight: 600; }
+  .chip.s { background: var(--e-start-bg); color: var(--e-start-fg); }
+  .chip.p { background: var(--e-peak-bg);  color: var(--e-peak-fg); box-shadow: inset 0 0 0 1px #ff7b95; }
+  .chip.e { background: var(--e-end-bg);   color: var(--e-end-fg); }
+  .bar { display: inline-block; width: 22px; height: 0; }
+  .bar.s { border-top: 3px solid var(--accent); }
+  .bar.d { border-top: 2px solid var(--sep-decade); }
+  .bar.m { border-top: 2px dotted var(--sep-month); }
+  #info {
+    min-height: 2.2em; padding: 6px 12px; border-radius: 10px;
+    background: var(--surface); border: 1px solid var(--line); color: var(--text);
+  }
+  #info b { color: var(--accent); }
+
+  @media (max-width: 700px) { body { height: auto; min-height: 100dvh; } .wrap { height: 80dvh; } }
+  @media print {
+    body { background: #fff; color: #000; height: auto; }
+    .wrap { overflow: visible; }
+    .year button, .btn, dialog { display: none; }
+  }
+</style>
+</head>
+<body>
+<a class="skip" href="#grille">Aller au calendrier</a>
+
+<header>
+  <div class="title">
+    <h1>Calendrier d'Umbriel</h1>
+    <p class="sub"><b id="annee-txt"></b> · 10 mois de 30 jours · jour de 30 h</p>
+  </div>
+  <div class="tools">
+  <div class="year" role="group" aria-label="Choix de l'année">
+    <label for="annee">Année</label>
+    <button type="button" id="prev" aria-label="Année précédente">−</button>
+    <input id="annee" type="number" step="1" inputmode="numeric" aria-describedby="annee-aide">
+    <button type="button" id="next" aria-label="Année suivante">+</button>
+    <button type="button" id="ref" title="Revenir à l'année de référence" aria-label="Revenir à l'année de référence">⟲</button>
+    <span id="annee-aide" hidden>Les positions des lunes sont recalculées automatiquement.</span>
+  </div>
+  <button type="button" class="btn" id="btn-ariel" aria-haspopup="dialog"><span class="ic-ariel" aria-hidden="true">☾</span> Ariel</button>
+  <button type="button" class="btn" id="btn-systeme" title="Vue à plat du système : lunes en orbite et soleil"><span class="ic-sys" aria-hidden="true">◎</span> Système</button>
+  </div>
+</header>
+
+<main class="wrap">
+  <table id="grille" role="grid">
+    <thead id="thead"></thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</main>
+
+<footer>
+  <div class="legend" aria-label="Légende">
+    <span><span class="moon new" aria-hidden="true"></span>Nouvelle</span>
+    <span><span class="moon q1" aria-hidden="true"></span>Premier quartier</span>
+    <span><span class="moon full" aria-hidden="true"></span>Pleine</span>
+    <span><span class="moon q3" aria-hidden="true"></span>Dernier quartier</span>
+    <span>Gauche : <b style="color:var(--titania)">Titania</b> · Droite : <b style="color:var(--oberon)">Obéron</b></span>
+    <span><span class="chip s">↗ Début</span><span class="chip p">◆ Pic</span><span class="chip e">↘ Fin</span> des éclipses</span>
+    <span><span class="bar s"></span>Saison</span>
+    <span><span class="bar d"></span>Décade</span>
+    <span><span class="bar m"></span>Mois (même saison)</span>
+    <span><b style="color:var(--decade)">✦</b> Renaissance de l'Étoile</span>
+  </div>
+  <div id="info" aria-live="polite">Survolez ou naviguez (flèches du clavier) dans le calendrier pour voir le détail d'un jour.</div>
+</footer>
+
+<dialog id="ariel" aria-labelledby="ariel-titre">
+  <div class="dlg-in">
+    <div class="dlg-head">
+      <h2 id="ariel-titre"><span aria-hidden="true">☾</span> Ariel — lever, zénith, coucher</h2>
+      <form method="dialog"><button class="btn" aria-label="Fermer la fenêtre">✕</button></form>
+    </div>
+    <div class="dlg-ctrl">
+      <label>Année <input id="a-annee" type="number" step="1"></label>
+      <label>Mois <select id="a-mois"></select></label>
+      <label>Jour <input id="a-jour" type="number" min="1" max="30" step="1"></label>
+      <button type="button" class="btn" id="a-prev" aria-label="Jour précédent">◀ Jour</button>
+      <button type="button" class="btn" id="a-next" aria-label="Jour suivant">Jour ▶</button>
+    </div>
+    <p class="a-when" id="a-when" aria-live="polite"></p>
+    <table class="a-res">
+      <caption class="sr" style="position:absolute;left:-999px">Horaires d'Ariel pour le jour choisi</caption>
+      <tbody>
+        <tr><th scope="row">Lever</th><td id="a-lever"></td></tr>
+        <tr><th scope="row">Zénith</th><td id="a-zenith"></td></tr>
+        <tr><th scope="row">Coucher</th><td id="a-coucher"></td></tr>
+      </tbody>
+    </table>
+    <div class="a-bar" id="a-bar" aria-hidden="true"></div>
+    <p class="a-note" id="a-note"></p>
+  </div>
+</dialog>
+
+<script>
+/* ╔══════════════════════════════════════════════════════════════════════╗
+   ║                    ★  RÉGLAGES À MODIFIER ICI  ★                      ║
+   ╠══════════════════════════════════════════════════════════════════════╣
+   ║  ANNEE_REFERENCE : l'année pour laquelle les lunes sont dans leur     ║
+   ║  position « de départ » (les 2 lunes à leur phase d'origine au        ║
+   ║  jour 1 du mois 1). Mettez ici 532, 3248… ce que vous voulez.         ║
+   ║  Les autres années sont calculées par rapport à celle-ci.             ║
+   ╚══════════════════════════════════════════════════════════════════════╝ */
+const ANNEE_REFERENCE = 1;              // ← ICI : année de référence (entier, négatif possible)
+const ANNEE_AFFICHEE_AU_DEPART = ANNEE_REFERENCE;   // année affichée à l'ouverture de la page
+
+/* Éclipses : elles sont liées aux saisons, donc FIXES d'une année à l'autre (0).
+   Si un jour vous voulez qu'elles dérivent, mettez le nombre de jours de décalage par an
+   (ex. 3 = elles avancent de 3 jours chaque année ; négatif = elles reculent). */
+const DERIVE_ECLIPSES_JOURS_PAR_AN = 0;
+
+/* Périodes des lunes, en jours d'Umbriel */
+const PERIODE_TITANIA = 2.1;
+const PERIODE_OBERON  = 3.2;
+const JOURS_PAR_AN = 300;
+const DUREE_JOUR_H = 30;                // un jour d'Umbriel = 30 heures
+
+/* ── Ariel (lune très rapide : 18 h = 0,6 jour) ── */
+const PERIODE_ARIEL_H = 18;             // durée d'un tour, en heures d'Umbriel
+const HEURE_ZENITH_REFERENCE_H = 12;    // ← ICI : heure (de 0 à 30) du 1er zénith d'Ariel, jour 1 / mois 1 / année de référence
+const FRACTION_VISIBLE_ARIEL = 0.5;     // part de l'orbite passée au-dessus de l'horizon (0,5 = observateur à l'équateur)
+
+/* ── Bouton « Système » (page à générer plus tard) ──
+   Mettez ici le nom du fichier une fois la page créée, ex. "systeme-umbriel.html".
+   Tant que c'est vide, le bouton affiche simplement « page à venir » (ici : page générée).
+   Paramètres envoyés à la page : ?annee=…&mois=1..10&jour=1..30&ref=ANNEE_REFERENCE
+   Prévu : mode fixe (jour / mois / année choisis) et mini-animation (1 mois, 6 mois, 1 an ; ~1 jour / 0,5 s). */
+const URL_PAGE_SYSTEME = "systeme-umbriel.html";
+/* ═════════════════════════════════════════════════════════════════════════ */
+
+const SEASONS = {
+  sp: { name: "Grand Dégel",       icon: "🌸", label: "Printemps" },
+  su: { name: "Jours Flamboyants", icon: "☀️", label: "Été" },
+  au: { name: "Récoltes Dorées",   icon: "🍂", label: "Automne" },
+  wi: { name: "Grand Frimas",      icon: "❄️", label: "Hiver" }
+};
+const MONTHS = [
+  { n: "Perce-Glace", s: "sp" }, { n: "Bourgeons", s: "sp" },
+  { n: "Haut-Soleil", s: "su" }, { n: "Canicule", s: "su" }, { n: "Moissons", s: "su" },
+  { n: "Brumes", s: "au" }, { n: "Vendanges", s: "au" },
+  { n: "Premières Neiges", short: "1ères Neiges", s: "wi" }, { n: "Gel Éternel", s: "wi" }, { n: "Longue Nuit", s: "wi" }
+];
+
+// [index du mois, jour début, jour fin, type]
+const ECLIPSES = [
+  [0, 21, 29, "start"], [0, 30, 30, "peak"],
+  [1, 1, 3, "peak"],    [1, 4, 12, "end"],
+  [5, 22, 29, "start"], [5, 30, 30, "peak"],
+  [6, 1, 4, "peak"],    [6, 5, 12, "end"]
+];
+const eclipseByIdx = {};            // index du jour dans l'année (0..299) -> type
+ECLIPSES.forEach(([m, a, b, t]) => { for (let d = a; d <= b; d++) eclipseByIdx[m * 30 + d - 1] = t; });
+
+const ECL = {
+  start: { g: "↗", txt: "début de la saison des éclipses" },
+  peak:  { g: "◆", txt: "pic de l'éclipse" },
+  end:   { g: "↘", txt: "fin de la saison des éclipses" }
+};
+const PHASE = { new: "Nouvelle Lune", q1: "Premier Quartier", full: "Pleine Lune", q3: "Dernier Quartier" };
+
+const mod = (a, n) => ((a % n) + n) % n;
+
+function phase(day, period) {       // même logique qu'avant, sûre pour les valeurs négatives
+  const a = mod(360 * (day - 1) / period, 360);
+  if (a < 25 || a >= 335) return "new";
+  if (a >= 65 && a < 115) return "q1";
+  if (a >= 155 && a < 205) return "full";
+  if (a >= 245 && a < 295) return "q3";
+  return null;
+}
+
+const isSeasonStart = i => i === 0 || MONTHS[i].s !== MONTHS[i - 1].s;
+const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
+
+/* ----- En-tête : saisons puis mois ----- */
+const thead = document.getElementById("thead");
+const rs = el("tr", "seasons"), rm = el("tr", "months");
+const corner = el("th", "corner", "Jour"); corner.rowSpan = 2; corner.scope = "col";
+rs.appendChild(corner);
+["sp", "su", "au", "wi"].forEach(k => {
+  const n = MONTHS.filter(m => m.s === k).length;
+  const th = el("th", "season-start " + k, `<span aria-hidden="true">${SEASONS[k].icon}</span> ${SEASONS[k].label} <span style="opacity:.8;text-transform:none;letter-spacing:0;font-weight:500">· ${SEASONS[k].name}</span>`);
+  th.colSpan = n; th.scope = "colgroup";
+  rs.appendChild(th);
+});
+MONTHS.forEach((m, i) => {
+  const cls = (isSeasonStart(i) ? "season-start " : "msep ") + m.s;
+  const th = el("th", cls, `<small>Mois ${i + 1}</small>${m.short || m.n}`);
+  th.scope = "col";
+  th.setAttribute("aria-label", `Mois ${i + 1}, ${m.n}, ${SEASONS[m.s].label}`);
+  rm.appendChild(th);
+});
+thead.append(rs, rm);
+
+/* ----- Corps (structure créée une fois, contenu recalculé par render()) ----- */
+const tbody = document.getElementById("tbody");
+const info = document.getElementById("info");
+const grid = [];
+const cells = [];
+
+for (let d = 1; d <= 30; d++) {
+  const tr = el("tr", d % 10 === 0 ? "decade-end" : "");
+  const th = el("th", "", "J" + d); th.scope = "row";
+  th.setAttribute("aria-label", `Jour ${d}, décade ${Math.ceil(d / 10)}`);
+  tr.appendChild(th);
+  grid[d - 1] = [];
+
+  MONTHS.forEach((m, i) => {
+    const td = el("td", isSeasonStart(i) ? "season-start " + m.s : "msep " + m.s);
+    td.setAttribute("role", "gridcell");
+    td.tabIndex = (d === 1 && i === 0) ? 0 : -1;
+    td.dataset.m = i; td.dataset.d = d;
+    tr.appendChild(td);
+    grid[d - 1][i] = td;
+    cells.push({ td, i, d });
+  });
+  tbody.appendChild(tr);
+}
+
+function moonHTML(p, cls) {
+  return p ? `<span class="moon ${cls} ${p}" aria-hidden="true"></span>` : `<span class="slot" aria-hidden="true"><i></i></span>`;
+}
+
+let annee = ANNEE_AFFICHEE_AU_DEPART;
+{ const p = new URLSearchParams(location.search);          // ?annee=… (envoyé par la page Système)
+  if (p.has("annee") && Number.isFinite(+p.get("annee"))) annee = Math.trunc(+p.get("annee")); }
+
+function render() {
+  const delta = annee - ANNEE_REFERENCE;                 // nombre d'années écoulées depuis la référence
+  cells.forEach(({ td, i, d }) => {
+    const idx = i * 30 + d - 1;                           // 0..299
+    const abs = delta * JOURS_PAR_AN + idx + 1;           // jour absolu depuis la référence
+    const t = phase(abs, PERIODE_TITANIA), o = phase(abs, PERIODE_OBERON);
+    const ec = eclipseByIdx[mod(idx - DERIVE_ECLIPSES_JOURS_PAR_AN * delta, JOURS_PAR_AN)];
+    const fete = (i === 9 && d === 30);
+
+    td.classList.remove("e-start", "e-peak", "e-end");
+    if (ec) td.classList.add("e-" + ec);
+    td.classList.toggle("is-fete", fete);
+
+    const parts = [`Titania : ${t ? PHASE[t] : "aucune phase marquée"}`, `Obéron : ${o ? PHASE[o] : "aucune phase marquée"}`];
+    if (ec) parts.push("Éclipse : " + ECL[ec].txt);
+    if (fete) parts.push("Fête de la Renaissance de l'Étoile");
+    td.setAttribute("aria-label", `Année ${annee}, mois ${i + 1} ${MONTHS[i].n}, jour ${d}. ` + parts.join(". "));
+    td.dataset.info = `<b>An ${annee} · Mois ${i + 1} · ${MONTHS[i].n}</b> — jour ${d} (${SEASONS[MONTHS[i].s].label}) &nbsp;|&nbsp; ${parts.join(" &nbsp;|&nbsp; ")}`;
+
+    td.innerHTML =
+      (ec ? `<span class="ec" aria-hidden="true">${ECL[ec].g}</span>` : "") +
+      `<div class="cell">${moonHTML(t, "t")}${moonHTML(o, "o")}</div>` +
+      (fete ? `<span class="fete" aria-hidden="true">✦</span>` : "");
+  });
+
+  document.getElementById("annee-txt").textContent = "Année " + annee;
+  document.getElementById("grille").setAttribute("aria-label",
+    `Calendrier d'Umbriel, année ${annee} : phases des lunes Titania et Obéron et saisons des éclipses, 10 mois de 30 jours`);
+  document.title = `Calendrier d'Umbriel — Année ${annee}`;
+}
+
+/* ----- Sélecteur d'année ----- */
+const input = document.getElementById("annee");
+function setYear(v, announce = true) {
+  const n = Math.trunc(Number(v));
+  if (!Number.isFinite(n)) { input.value = annee; return; }
+  annee = n; input.value = n; render();
+  if (announce) info.textContent = `Année ${n} : positions des lunes recalculées` +
+    (DERIVE_ECLIPSES_JOURS_PAR_AN ? " (éclipses décalées)." : " (éclipses inchangées).");
+}
+input.addEventListener("change", () => setYear(input.value));
+input.addEventListener("keydown", e => { if (e.key === "Enter") setYear(input.value); });
+document.getElementById("prev").addEventListener("click", () => setYear(annee - 1));
+document.getElementById("next").addEventListener("click", () => setYear(annee + 1));
+document.getElementById("ref").addEventListener("click", () => setYear(ANNEE_REFERENCE));
+setYear(annee, false);
+
+let lastSel = { i: 0, d: 1 };            // dernier jour survolé / focalisé (sert de valeur par défaut aux outils)
+
+/* ----- Ariel : lever / zénith / coucher (calcul en minutes) ----- */
+const MIN_JOUR    = Math.round(DUREE_JOUR_H * 60);
+const MIN_PERIODE = Math.round(PERIODE_ARIEL_H * 60);
+const MIN_Z0      = Math.round(HEURE_ZENITH_REFERENCE_H * 60);
+const MIN_DEMI    = Math.round(MIN_PERIODE * FRACTION_VISIBLE_ARIEL / 2);   // zénith ± ceci = lever / coucher
+
+const dlg = document.getElementById("ariel");
+const aAn = document.getElementById("a-annee"), aMois = document.getElementById("a-mois"), aJour = document.getElementById("a-jour");
+MONTHS.forEach((m, i) => aMois.add(new Option(`${i + 1} · ${m.n}`, i)));
+
+const absDay = (y, m, d) => (y - ANNEE_REFERENCE) * JOURS_PAR_AN + m * 30 + (d - 1);
+const fromAbs = a => { const r = mod(a, JOURS_PAR_AN); return { y: ANNEE_REFERENCE + Math.floor(a / JOURS_PAR_AN), m: Math.floor(r / 30), d: (r % 30) + 1 }; };
+const hm = (t, start) => { const x = t - start; return `${Math.floor(x / 60)}h${String(x % 60).padStart(2, "0")}`; };
+
+function eventsIn(start, end, offset) {          // instants (minutes absolues) de Z + offset dans [start, end[
+  const out = [];
+  for (let k = Math.ceil((start - MIN_Z0 - offset) / MIN_PERIODE); ; k++) {
+    const t = MIN_Z0 + offset + k * MIN_PERIODE;
+    if (t >= end) break;
+    out.push(t);
+  }
+  return out;
+}
+
+function renderAriel() {
+  const y = Math.trunc(Number(aAn.value));
+  if (!Number.isFinite(y)) return;
+  const m = Math.min(9, Math.max(0, +aMois.value || 0));
+  const d = Math.min(30, Math.max(1, Math.trunc(Number(aJour.value)) || 1));
+  aJour.value = d;
+
+  const start = absDay(y, m, d) * MIN_JOUR, end = start + MIN_JOUR;
+  const fmt = list => list.length ? list.map(t => hm(t, start)).join("  ·  ") : "— (aucun ce jour-là)";
+  document.getElementById("a-lever").textContent   = fmt(eventsIn(start, end, -MIN_DEMI));
+  document.getElementById("a-zenith").textContent  = fmt(eventsIn(start, end, 0));
+  document.getElementById("a-coucher").textContent = fmt(eventsIn(start, end, +MIN_DEMI));
+  document.getElementById("a-when").innerHTML =
+    `<b>An ${y} · Mois ${m + 1} ${MONTHS[m].n} · jour ${d}</b> — heures de 0h à ${DUREE_JOUR_H}h`;
+
+  // Frise de la journée : fenêtres de visibilité + traits de zénith
+  let html = `<div class="track">`;
+  for (let k = Math.floor((start - MIN_Z0 - MIN_DEMI) / MIN_PERIODE) - 1; ; k++) {
+    const z = MIN_Z0 + k * MIN_PERIODE;
+    if (z - MIN_DEMI >= end) break;
+    const a = Math.max(z - MIN_DEMI, start), b = Math.min(z + MIN_DEMI, end);
+    if (b > a) html += `<i class="seg" style="left:${(a - start) / MIN_JOUR * 100}%;width:${(b - a) / MIN_JOUR * 100}%"></i>`;
+  }
+  html += `</div>`;
+  eventsIn(start, end, 0).forEach(t => { html += `<b class="zen" style="left:${(t - start) / MIN_JOUR * 100}%"></b>`; });
+  for (let h = 0; h <= DUREE_JOUR_H; h += 5) html += `<span class="tick" style="left:${h / DUREE_JOUR_H * 100}%">${h}h</span>`;
+  document.getElementById("a-bar").innerHTML = html;
+
+  document.getElementById("a-note").textContent =
+    `Violet : Ariel au-dessus de l'horizon · trait blanc : zénith. Ariel fait un tour en ${PERIODE_ARIEL_H} h dans un jour de ${DUREE_JOUR_H} h : ` +
+    `son passage se décale de ${DUREE_JOUR_H - PERIODE_ARIEL_H} h d'un jour à l'autre. Estimation simplifiée (observateur à l'équateur, ` +
+    `${Math.round(FRACTION_VISIBLE_ARIEL * 100)} % de l'orbite visible).`;
+}
+function shiftDay(delta) {
+  const n = fromAbs(absDay(Math.trunc(Number(aAn.value)) || ANNEE_REFERENCE, +aMois.value, Math.trunc(Number(aJour.value)) || 1) + delta);
+  aAn.value = n.y; aMois.value = n.m; aJour.value = n.d; renderAriel();
+}
+[aAn, aMois, aJour].forEach(c => c.addEventListener("input", renderAriel));
+document.getElementById("a-prev").addEventListener("click", () => shiftDay(-1));
+document.getElementById("a-next").addEventListener("click", () => shiftDay(+1));
+document.getElementById("btn-ariel").addEventListener("click", () => {
+  aAn.value = annee; aMois.value = lastSel.i; aJour.value = lastSel.d;
+  renderAriel(); dlg.showModal();
+});
+dlg.addEventListener("click", e => { if (e.target === dlg) dlg.close(); });   // clic sur le fond = fermer
+
+/* ----- Bouton « Système » ----- */
+document.getElementById("btn-systeme").addEventListener("click", () => {
+  if (!URL_PAGE_SYSTEME) { info.textContent = "La page « Système » (lunes en orbite, soleil mobile, animation) n'est pas encore générée."; return; }
+  const p = new URLSearchParams({ annee, mois: lastSel.i + 1, jour: lastSel.d, ref: ANNEE_REFERENCE });
+  window.location.href = URL_PAGE_SYSTEME + '?' + p.toString();
+});
+
+/* ----- Interactions : détail + navigation clavier (roving tabindex) ----- */
+const show = td => { info.innerHTML = td.dataset.info; lastSel = { i: +td.dataset.m, d: +td.dataset.d }; };
+tbody.addEventListener("mouseover", e => { const td = e.target.closest("td"); if (td) show(td); });
+tbody.addEventListener("focusin",   e => { const td = e.target.closest("td"); if (td) show(td); });
+
+tbody.addEventListener("keydown", e => {
+  const td = e.target.closest("td"); if (!td) return;
+  const r = td.parentElement.rowIndex - 2, c = td.cellIndex - 1;   // 2 lignes d'en-tête, 1 colonne "Jour"
+  const rr = grid.length - 1, cc = MONTHS.length - 1;
+  let nr = r, nc = c;
+  switch (e.key) {
+    case "ArrowDown":  nr = Math.min(r + 1, rr); break;
+    case "ArrowUp":    nr = Math.max(r - 1, 0); break;
+    case "ArrowRight": nc = Math.min(c + 1, cc); break;
+    case "ArrowLeft":  nc = Math.max(c - 1, 0); break;
+    case "Home":       nc = 0; break;
+    case "End":        nc = cc; break;
+    case "PageUp":     nr = Math.max(r - 10, 0); break;
+    case "PageDown":   nr = Math.min(r + 10, rr); break;
+    default: return;
+  }
+  e.preventDefault();
+  td.tabIndex = -1;
+  const next = grid[nr][nc]; next.tabIndex = 0; next.focus();
+});
+</script>
+</body>
+</html>
