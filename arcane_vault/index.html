@@ -122,11 +122,11 @@ header{display:flex;align-items:center;justify-content:space-between;width:100%;
 /* Rarity borders */
 .loot-card.r-C{border-color:rgba(148,163,184,.3);box-shadow:0 0 20px rgba(148,163,184,.1);}
 .loot-card.r-PC{border-color:rgba(74,222,128,.4);box-shadow:0 0 25px rgba(74,222,128,.15),inset 0 0 30px rgba(74,222,128,.05);}
-.loot-card.r-r{border-color:rgba(34,211,238,.5);box-shadow:0 0 30px rgba(34,211,238,.2),inset 0 0 40px rgba(34,211,238,.08);}
-.loot-card.r-tr{border-color:rgba(168,85,247,.7);box-shadow:0 0 40px rgba(168,85,247,.35),inset 0 0 60px rgba(168,85,247,.1);}
+.loot-card.r-R{border-color:rgba(34,211,238,.5);box-shadow:0 0 30px rgba(34,211,238,.2),inset 0 0 40px rgba(34,211,238,.08);}
+.loot-card.r-TR{border-color:rgba(168,85,247,.7);box-shadow:0 0 40px rgba(168,85,247,.35),inset 0 0 60px rgba(168,85,247,.1);}
 .loot-card.r-L{border-color:rgba(249,115,22,.8);box-shadow:0 0 60px rgba(249,115,22,.4),0 0 120px rgba(249,115,22,.2),inset 0 0 80px rgba(249,115,22,.1);}
-/* Shimmer tr */
-.loot-card.r-tr::before{content:'';position:absolute;inset:0;background:linear-gradient(105deg,transparent 40%,rgba(168,85,247,.12) 50%,transparent 60%);background-size:200% 100%;animation:shimmer 3s ease-in-out infinite;}
+/* Shimmer TR */
+.loot-card.r-TR::before{content:'';position:absolute;inset:0;background:linear-gradient(105deg,transparent 40%,rgba(168,85,247,.12) 50%,transparent 60%);background-size:200% 100%;animation:shimmer 3s ease-in-out infinite;}
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 /* Legendary fire */
 .loot-card.r-L::before{content:'';position:absolute;inset:0;background:linear-gradient(105deg,transparent 35%,rgba(249,115,22,.18) 50%,rgba(251,191,36,.1) 55%,transparent 65%);background-size:300% 100%;animation:fire-shimmer 2s ease-in-out infinite;}
@@ -196,8 +196,8 @@ header{display:flex;align-items:center;justify-content:space-between;width:100%;
 /* RARITY COLORS */
 .rc-C{color:var(--c-c);}
 .rc-PC{color:var(--c-pc);}
-.rc-r{color:var(--c-r);}
-.rc-tr{color:var(--c-tr);}
+.rc-R{color:var(--c-r);}
+.rc-TR{color:var(--c-tr);}
 .rc-L{color:var(--c-l);}
 
 /* SIDEBAR */
@@ -408,6 +408,8 @@ header{display:flex;align-items:center;justify-content:space-between;width:100%;
 <div id="toast"></div>
 
 <script>
+// ============================================================
+// DEMO DATA — Remplacez par votre fichier data.js
 // ============================================================
 const loots = [
   "Accordéon du noceur|https://www.aidedd.org/dnd/om.php?vf=accordeon-du-noceur|Objet merveilleux|R",
@@ -864,15 +866,15 @@ const loots = [
 // VERSIONING — Modifiez le chiffre AVANT le point pour reset total,
 // le chiffre APRÈS pour reset des clés uniquement.
 // ============================================================
-const CURRENT_VERSION = "1.1";
+const CURRENT_VERSION = "1.3";
 
-// DROP RATES — C:40 | PC:25 | r:20 | tr:8 | L:5 | A:2
-const DROP_RATES = { C:40, PC:25, r:20, tr:8, L:5, A:2 };
+// DROP RATES — C:40 | PC:25 | R:20 | TR:8 | L:5 | A:2
+const DROP_RATES = { C:40, PC:25, R:20, TR:8, L:5, A:2 };
 // Ordre de fallback si pool vide (du plus rare vers le plus commun)
-const RARITY_FALLBACK = ['A','L','tr','r','PC','C'];
+const RARITY_FALLBACK = ['A','L','TR','R','PC','C'];
 
 const MAX_KEYS = 3;
-const REGEN_MS = 6 * 60 * 60 * 1000;
+const REGEN_MS = 4 * 60 * 60 * 1000;
 const FRAGS_PER_KEY = 5;
 const LSKEY = 'arcane-vault';
 
@@ -933,8 +935,8 @@ function playRevealSound(rarity){
     const isHighTier = rarity==='L'||rarity==='A';
     // Arpège ascendant, plus complexe pour L/A
     const scales = {
-      C:[261,330,392], PC:[261,330,392,523], r:[293,370,440,587],
-      tr:[311,415,523,622,830], L:[329,415,523,659,830,1046,1319], A:[277,370,466,587,740,932,1175,1480]
+      C:[261,330,392], PC:[261,330,392,523], R:[293,370,440,587],
+      TR:[311,415,523,622,830], L:[329,415,523,659,830,1046,1319], A:[277,370,466,587,740,932,1175,1480]
     };
     const notes = scales[rarity]||scales['C'];
     notes.forEach((freq,i)=>{
@@ -1080,9 +1082,9 @@ function initStars(){
 // ============================================================
 // RARITY TABLES
 // ============================================================
-const RARITY_LABELS = { C:'Commun', PC:'Peu Commun', r:'Rare', tr:'Très Rare', L:'Légendaire', A:'Artefact' };
-const RARITY_COLORS = { C:'var(--c-c)', PC:'var(--c-pc)', r:'var(--c-r)', tr:'var(--c-tr)', L:'var(--c-l)', A:'var(--c-a)' };
-const RARITY_DOTS   = { C:'#94a3b8', PC:'#4ade80', r:'#22d3ee', tr:'#a855f7', L:'#f97316', A:'#e11d48' };
+const RARITY_LABELS = { C:'Commun', PC:'Peu Commun', R:'Rare', TR:'Très Rare', L:'Légendaire', A:'Artefact' };
+const RARITY_COLORS = { C:'var(--c-c)', PC:'var(--c-pc)', R:'var(--c-r)', TR:'var(--c-tr)', L:'var(--c-l)', A:'var(--c-a)' };
+const RARITY_DOTS   = { C:'#94a3b8', PC:'#4ade80', R:'#22d3ee', TR:'#a855f7', L:'#f97316', A:'#e11d48' };
 
 function rollRarity(){
   const r=Math.random()*100; let cumul=0;
@@ -1178,13 +1180,15 @@ function openChest(){
         saveState();
       }
       const lootStr=rollLoot(rarity);
-      const [name,link,type] = lootStr.split('|');
+      const [name,link,type,actualRarity] = lootStr.split('|');
+      // Use actualRarity (handles fallback cascade correctly)
+      const finalRarity = actualRarity || rarity;
 
       state.inventory[lootStr]=(state.inventory[lootStr]||0)+1;
       saveState();
 
-      playRevealSound(rarity);
-      buildCard(name,link,type,rarity);
+      playRevealSound(finalRarity);
+      buildCard(name,link,type,finalRarity);
 
       const ca=document.getElementById('card-area');
       ca.style.display='block';
@@ -1205,21 +1209,21 @@ function buildCard(name,link,type,rarity){
   const icon=typeIcon(type);
   const nameClass=rarity==='A'?'artefact-glow':rarity==='L'?'legendary-glow':'';
 
-  document.getElementById('card-inner').innerHTML=`
-    <div style="display:flex;align-items:center;gap:12px;">
-      <div class="card-type-icon" style="color:${color};border-color:${color}33">${icon}</div>
-      <div>
-        <div class="card-rarity rc-${rarity}">${RARITY_LABELS[rarity]||rarity}</div>
-        <div class="card-type" style="margin-top:2px">
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" opacity=".5"><circle cx="12" cy="12" r="4"/></svg>${type}
-        </div>
-      </div>
-    </div>
-    <div class="card-name ${nameClass}" style="color:${color}">${name}</div>
-    ${link&&link!=='#'?`<a class="card-link" href="${link}" target="_blank" rel="noopener">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>Voir la fiche
-    </a>`:''}
-  `;
+  const linkHTML = (link && link !== '#')
+    ? '<a class="card-link" href="' + link + '" target="_blank" rel="noopener">'
+      + '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>'
+      + 'Voir la fiche</a>'
+    : '';
+  document.getElementById('card-inner').innerHTML =
+    '<div style="display:flex;align-items:center;gap:12px;">'
+    + '<div class="card-type-icon" style="color:' + color + ';border-color:' + color + '33">' + icon + '</div>'
+    + '<div>'
+    + '<div class="card-rarity rc-' + rarity + '">' + (RARITY_LABELS[rarity]||rarity) + '</div>'
+    + '<div class="card-type" style="margin-top:2px">'
+    + '<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" opacity=".5"><circle cx="12" cy="12" r="4"/></svg>' + type
+    + '</div></div></div>'
+    + '<div class="card-name ' + nameClass + '" style="color:' + color + '">' + name + '</div>'
+    + linkHTML;
 }
 
 function resetToChest(){
@@ -1238,6 +1242,7 @@ let activeTab='all';
 function openSidebar(){ document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); renderInventory(); }
 function closeSidebar(){ document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
 
+function recycleByIndex(idx, e){ recycleItem(window._invKeys[idx], e); }
 function recycleItem(lootKey, e){
   e.stopPropagation();
   if((state.inventory[lootKey]||0) < 2) return;
@@ -1271,11 +1276,11 @@ function renderInventory(){
 
   // Tabs
   const tabs=document.getElementById('sidebar-tabs');
-  const tabDefs=[['all','Tout'],['A','Artefact'],['L','Légendaire'],['tr','T. Rare'],['r','Rare'],['PC','P. Commun'],['C','Commun']];
+  const tabDefs=[['all','Tout'],['A','Artefact'],['L','Légendaire'],['TR','T. Rare'],['R','Rare'],['PC','P. Commun'],['C','Commun']];
   tabs.innerHTML=tabDefs.map(([k,l])=>`<button class="tab-btn ${activeTab===k?'active':''}" onclick="setTab('${k}')">${l}</button>`).join('');
 
   // Filter + sort
-  const order={A:0,L:1,tr:2,r:3,PC:4,C:5};
+  const order={A:0,L:1,TR:2,R:3,PC:4,C:5};
   const filtered=entries
     .filter(([k])=>{ const [n,,,r]=k.split('|'); return (activeTab==='all'||r===activeTab)&&(!search||n.toLowerCase().includes(search)); })
     .sort(([a],[b])=>{ const ra=a.split('|')[3],rb=b.split('|')[3]; return (order[ra]??9)-(order[rb]??9); });
@@ -1284,19 +1289,24 @@ function renderInventory(){
   if(!filtered.length){
     list.innerHTML=`<div class="inv-empty">Aucun objet trouvé.<br><br>Ouvrez des coffres pour<br>remplir votre inventaire.</div>`;
   } else {
-    list.innerHTML=filtered.map(([k,cnt])=>{
+    // Store keys in a temp lookup so onclick can reference by index safely
+    window._invKeys = filtered.map(([k])=>k);
+    list.innerHTML=filtered.map(([k,cnt],idx)=>{
       const [n,lnk,,rar]=k.split('|');
-      const safeKey=btoa(unescape(encodeURIComponent(k))).replace(/[^a-zA-Z0-9]/g,'').slice(0,16);
-      return `<div class="inv-item" id="ii_${safeKey}" onclick="window.open('${lnk}','_blank')">
-        <div class="inv-dot" style="background:${RARITY_DOTS[rar]||'#666'}"></div>
-        <span class="inv-name">${n}</span>
-        ${cnt>1?`<span class="inv-count rc-${rar}">×${cnt}</span><button class="recycle-btn" onclick="recycleItem(${JSON.stringify(k)},event)" title="Recycler un doublon">♻</button>`:''}
-      </div>`;
+      const extraHTML = cnt > 1
+        ? '<span class="inv-count rc-' + rar + '">×' + cnt + '</span>'
+          + '<button class="recycle-btn" onclick="recycleByIndex(' + idx + ',event)" title="Recycler un doublon">♻</button>'
+        : '';
+      return '<div class="inv-item" onclick="window.open(\'' + lnk.replace(/'/g,"\\'") + '\',\'_blank\')">'
+        + '<div class="inv-dot" style="background:' + (RARITY_DOTS[rar]||'#666') + '"></div>'
+        + '<span class="inv-name">' + n + '</span>'
+        + extraHTML
+        + '</div>';
     }).join('');
   }
 
   // Stats
-  const stats={A:0,L:0,tr:0,r:0,PC:0,C:0};
+  const stats={A:0,L:0,TR:0,R:0,PC:0,C:0};
   Object.keys(state.inventory).filter(k=>state.inventory[k]>0).forEach(k=>{ const r=k.split('|')[3]; if(stats[r]!==undefined) stats[r]++; });
   document.getElementById('inv-stats').innerHTML=Object.entries(stats).map(([k,v])=>`
     <div class="stat-chip"><span class="stat-num rc-${k}">${v}</span><span class="stat-lbl">${k}</span></div>`).join('');
