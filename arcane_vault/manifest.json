@@ -9,15 +9,21 @@
   "background_color": "#16213e",
   "icons": [
     {
-      "src": "data:image/svg+xml;utf8,<svg xmlns='http://w3.org' viewBox='0 0 100 100' fill='%231a1a2e'><rect width='100' height='100' rx='20' fill='%231a1a2e' stroke='%23a855f7' stroke-width='4'/><text x='50' y='65' font-size='45' font-family='serif' text-anchor='middle' fill='%23a855f7'>ᚱ</text></svg>",
-      "sizes": "192x192",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "src": "icons8-loot-box-32.png",
+      "sizes": "32x32",
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "data:image/svg+xml;utf8,<svg xmlns='http://w3.org' viewBox='0 0 100 100' fill='%231a1a2e'><rect width='100' height='100' rx='20' fill='%231a1a2e' stroke='%23a855f7' stroke-width='4'/><text x='50' y='65' font-size='45' font-family='serif' text-anchor='middle' fill='%23a855f7'>ᚱ</text></svg>",
+      "src": "https://icons8.com",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://icons8.com",
       "sizes": "512x512",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any"
     }
   ]
