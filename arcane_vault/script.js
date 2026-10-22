@@ -518,7 +518,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeModal(); });
 window.onload = function() {
   // Enregistrement du Service Worker pour le mode hors-ligne
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/mcc/arcane_vault/sw.js')
+    navigator.serviceWorker.register('sw.js')
       .then(() => console.log('SW enregistré avec succès'))
       .catch(err => console.error('Erreur d\'enregistrement SW', err));
   }

@@ -1,9 +1,9 @@
 const CACHE_NAME = 'arcane-vault-cache-v1';
 const FILES_TO_CACHE = [
-  '/mcc/arcane_vault/index.html',
-  '/mcc/arcane_vault/style.css',
-  '/mcc/arcane_vault/script.js',
-  '/mcc/arcane_vault/data.js'
+  'index.html',
+  'style.css',
+  'script.js',
+  'data.js'
 ];
 
 self.addEventListener('install', event => {
@@ -40,7 +40,7 @@ self.addEventListener('fetch', event => {
       })
       .catch(() => {
         if (event.request.mode === 'navigate') {
-          return caches.match('/mcc/arcane_vault/index.html');
+          return caches.match('index.html');
         }
       })
   );
