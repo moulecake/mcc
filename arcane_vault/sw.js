@@ -2,7 +2,8 @@ const CACHE_NAME = 'arcane-vault-cache-v1';
 const FILES_TO_CACHE = [
   '/mcc/arcane_vault/index.html',
   '/mcc/arcane_vault/style.css',
-  '/mcc/arcane_vault/script.js'
+  '/mcc/arcane_vault/script.js',
+  '/mcc/arcane_vault/data.js'
 ];
 
 self.addEventListener('install', event => {
@@ -14,9 +15,7 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('activate', event => {
-  const cacheWhitelist = [];
-  cacheWhitelist.push(CACHE_NAME);
-
+  const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
@@ -26,8 +25,7 @@ self.addEventListener('activate', event => {
           }
         })
       );
-    })
-    .then(() => self.clients.claim())
+    }).then(() => self.clients.claim())
   );
 });
 
@@ -41,9 +39,8 @@ self.addEventListener('fetch', event => {
         return fetch(event.request);
       })
       .catch(() => {
-        // Fallback for navigation requests
         if (event.request.mode === 'navigate') {
-          return caches.match('/arcane-vault/index.html');
+          return caches.match('/mcc/arcane_vault/index.html');
         }
       })
   );
