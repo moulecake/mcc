@@ -1,9 +1,12 @@
 const CACHE_NAME = 'arcane-vault-cache-v1';
+const BASE = '/mcc/arcane_vault/';
 const FILES_TO_CACHE = [
-  'index.html',
-  'style.css',
-  'script.js',
-  'data.js'
+  BASE + 'index.html',
+  BASE + 'style.css',
+  BASE + 'script.js',
+  BASE + 'data.js',
+  BASE + 'icon-192.png',
+  BASE + 'icon-512.png'
 ];
 
 self.addEventListener('install', event => {
@@ -15,33 +18,20 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('activate', event => {
-  const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.map(cache => {
-          if (!cacheWhitelist.includes(cache)) {
-            return caches.delete(cache);
-          }
-        })
-      );
-    }).then(() => self.clients.claim())
+    caches.keys().then(keys =>
+      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
+    ).then(() => self.clients.claim())
   );
 });
 
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
-
   event.respondWith(
-    caches.match(event.request)
-      .then(response => {
-        if (response) return response;
-        return fetch(event.request);
-      })
-      .catch(() => {
-        if (event.request.mode === 'navigate') {
-          return caches.match('index.html');
-        }
-      })
+    caches.match(event.request).then(cached => {
+      return cached || fetch(event.request).catch(() => {
+        if (event.request.mode === 'navigate') return caches.match(BASE + 'index.html');
+      });
+    })
   );
 });
