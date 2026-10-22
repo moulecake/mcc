@@ -4,11 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Loot Box — Arcane Vault</title>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-<script src="data.js"></script>
-<script src="script.js"></script>
-<link rel="stylesheet" href="style.css">
+<!-- LIEN DE L'APPLICATION PWA (OBLIGATOIRE POUR ANDROID/PC) -->
+    <link rel="manifest" href="/mcc/arcane_vault/manifest.json">
+    <meta name="theme-color" content="#1a1a2e">
 
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- Scripts chargés proprement pour éviter les bugs d'affichage au démarrage -->
+    <script src="data.js" defer></script>
+    <script src="script.js" defer></script>
 </head>
 <body>
 
