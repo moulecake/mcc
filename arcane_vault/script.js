@@ -7,7 +7,7 @@
 // VERSIONING — Modifiez le chiffre AVANT le point pour reset total,
 // le chiffre APRÈS pour reset des clés uniquement.
 // ============================================================
-const CURRENT_VERSION = "1.4";
+const CURRENT_VERSION = "1.7";
 
 // DROP RATES — C:40 | PC:25 | R:20 | TR:8 | L:5 | A:2
 const DROP_RATES = { C:40, PC:25, R:20, TR:8, L:5, A:2 };
