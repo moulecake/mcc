@@ -198,6 +198,8 @@ header{display:flex;align-items:center;justify-content:space-between;width:100%;
   background:rgba(6,8,16,.97);border-left:1px solid var(--border);
   backdrop-filter:blur(40px);z-index:200;transition:right .4s cubic-bezier(.4,0,.2,1);
   display:flex;flex-direction:column;
+  overflow-y:auto;          /* ← AJOUT */
+  scroll-behavior:smooth;   /* ← AJOUT */
 }
 #sidebar.open{right:0;}
 .sidebar-header{padding:20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
@@ -342,4 +344,245 @@ header{display:flex;align-items:center;justify-content:space-between;width:100%;
 }
 .legal-modal-close:hover {
     color: white;
+}
+/* ============================================================
+   ÉTAPE B — PROFIL JOUEUR
+   ============================================================ */
+
+/* Écran d'accueil */
+#welcome-screen {
+  position: fixed; inset: 0; z-index: 800;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg);
+  transition: opacity .5s ease, visibility .5s ease;
+}
+#welcome-screen.hidden {
+  opacity: 0; visibility: hidden; pointer-events: none;
+}
+.welcome-box {
+  display: flex; flex-direction: column; align-items: center; gap: 18px;
+  background: rgba(13,17,28,.75); border: 1px solid rgba(168,85,247,.2);
+  border-radius: 20px; padding: 40px 36px; max-width: 380px; width: 90%;
+  backdrop-filter: blur(30px);
+  box-shadow: 0 0 60px rgba(168,85,247,.12), inset 0 0 40px rgba(168,85,247,.04);
+}
+.welcome-rune {
+  font-size: 32px; color: #a855f7;
+  text-shadow: 0 0 20px rgba(168,85,247,.8);
+  animation: breathe 3s ease-in-out infinite;
+}
+.welcome-title {
+  font-family: 'Cinzel', serif; font-size: 26px; font-weight: 900;
+  letter-spacing: 4px; text-align: center;
+  background: linear-gradient(135deg, #a855f7, #22d3ee);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  margin: 0;
+}
+.welcome-sub {
+  font-size: 12px; color: var(--text-dim); text-align: center;
+  line-height: 1.6; font-style: italic; margin: 0;
+}
+.welcome-input-wrap { width: 100%; }
+.welcome-input {
+  width: 100%; background: rgba(255,255,255,.05);
+  border: 1px solid rgba(168,85,247,.3); border-radius: 12px;
+  padding: 13px 16px; color: var(--text); font-family: 'Cinzel', serif;
+  font-size: 15px; letter-spacing: 1px; text-align: center; outline: none;
+  transition: border-color .3s, box-shadow .3s;
+}
+.welcome-input:focus {
+  border-color: rgba(168,85,247,.7);
+  box-shadow: 0 0 20px rgba(168,85,247,.2);
+}
+.welcome-hint {
+  font-size: 11px; color: var(--text-dim); text-align: center;
+  margin-top: 6px; min-height: 16px; transition: color .2s;
+}
+.welcome-hint.error { color: #f43f5e; }
+.welcome-hint.ok { color: #4ade80; }
+.welcome-btn {
+  width: 100%; padding: 14px; border-radius: 12px;
+  border: 1px solid rgba(168,85,247,.5);
+  background: linear-gradient(135deg, rgba(168,85,247,.2), rgba(34,211,238,.1));
+  color: var(--text); font-family: 'Cinzel', serif;
+  font-size: 13px; letter-spacing: 2px; cursor: pointer;
+  transition: opacity .3s, background .3s; position: relative; overflow: hidden;
+}
+.welcome-btn:disabled { opacity: .35; cursor: not-allowed; }
+.welcome-btn:not(:disabled):hover {
+  background: linear-gradient(135deg, rgba(168,85,247,.4), rgba(34,211,238,.2));
+}
+
+/* Badge joueur dans la sidebar */
+.player-badge {
+  padding: 12px 20px; border-bottom: 1px solid var(--border);
+  font-size: 12px; color: var(--text-dim); display: flex;
+  align-items: center; gap: 8px;
+}
+.player-badge strong { color: var(--text); font-family: 'Cinzel', serif; font-size: 13px; }
+
+/* Bouton fermeture MJ */
+.mj-btn-close {
+  background: rgba(255,255,255,.04) !important;
+  border-color: rgba(255,255,255,.1) !important;
+  color: var(--text-dim) !important; margin-top: 4px;
+}
+.mj-btn-close:hover { background: rgba(255,255,255,.1) !important; }
+
+/* ============================================================
+   ÉTAPE C — PARTAGE & INSPECTION
+   ============================================================ */
+.share-section {
+  padding: 12px 20px 16px;
+  border-top: 1px solid var(--border);
+}
+.share-title {
+  font-size: 10px; letter-spacing: 2px; color: var(--text-dim);
+  text-transform: uppercase; margin-bottom: 10px;
+}
+.share-btn {
+  width: 100%; padding: 9px 14px; border-radius: 10px;
+  border: 1px solid var(--border); background: rgba(255,255,255,.04);
+  color: var(--text-dim); font-size: 12px; cursor: pointer;
+  display: flex; align-items: center; gap: 8px;
+  transition: var(--t); margin-bottom: 6px;
+  font-family: 'Inter', sans-serif;
+}
+.share-btn:hover { background: rgba(255,255,255,.09); color: var(--text); }
+.share-btn-inspect { border-color: rgba(34,211,238,.2); }
+.share-btn-inspect:hover { border-color: rgba(34,211,238,.4); color: var(--c-r); }
+.inspect-textarea {
+  width: 100%; background: rgba(255,255,255,.04);
+  border: 1px solid rgba(34,211,238,.3); border-radius: 10px;
+  padding: 9px 12px; color: var(--text); font-size: 11px;
+  font-family: monospace; resize: none; outline: none;
+  transition: border-color .2s;
+}
+.inspect-textarea:focus { border-color: rgba(34,211,238,.7); }
+.inspect-readonly-badge {
+  margin: 0 20px 8px; padding: 6px 12px; border-radius: 8px;
+  background: rgba(34,211,238,.07); border: 1px solid rgba(34,211,238,.2);
+  font-size: 11px; color: var(--c-r); text-align: center; flex-shrink: 0;
+}
+.share-btn-load {
+  border-color: rgba(251,191,36,.25);
+  color: var(--text-dim);
+}
+.share-btn-load:hover { border-color: rgba(251,191,36,.5); color: #fbbf24; }
+
+.share-btn-danger {
+  border-color: rgba(239,68,68,.4) !important;
+  background: rgba(239,68,68,.08) !important;
+  color: #f87171 !important;
+}
+.share-btn-danger:hover { background: rgba(239,68,68,.18) !important; }
+
+.share-warning {
+  font-size: 11px; color: #f87171; background: rgba(239,68,68,.08);
+  border: 1px solid rgba(239,68,68,.25); border-radius: 8px;
+  padding: 8px 10px; margin-bottom: 8px; line-height: 1.5;
+}
+
+/* Fond teinté inspection */
+.inspect-overlay-bg {
+  position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  background: repeating-linear-gradient(
+    -45deg,
+    transparent, transparent 18px,
+    rgba(34,211,238,.025) 18px, rgba(34,211,238,.025) 19px
+  );
+}
+#inspect-panel { position: relative; }
+#inspect-panel > *:not(.inspect-overlay-bg) { position: relative; z-index: 1; 
+}
+/* ÉTAPE D */
+.trade-label {
+  font-size: 11px; color: var(--text-dim);
+  margin-bottom: 5px; letter-spacing: .3px;
+}
+.trade-select {
+  width: 100%; background: rgba(255,255,255,.05);
+  border: 1px solid var(--border); border-radius: 10px;
+  padding: 9px 12px; color: var(--text);
+  font-family: 'Inter', sans-serif; font-size: 12px;
+  outline: none; cursor: pointer; transition: var(--t);
+}
+.trade-select:focus { border-color: rgba(168,85,247,.5); }
+.trade-select option { background: #0b0f1a; }
+.share-btn-trade {
+  border-color: rgba(168,85,247,.35);
+}
+.share-btn-trade:hover { border-color: rgba(168,85,247,.7); color: var(--c-tr); 
+}
+/* ============================================================
+   PACTES & GRIMOIRES — Accordéon
+   ============================================================ */
+#pactes-menu {
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.pactes-toggle {
+  width: 100%; padding: 12px 20px;
+  background: transparent; border: none;
+  color: var(--text-dim); font-size: 12px;
+  font-family: 'Inter', sans-serif; letter-spacing: .5px;
+  display: flex; align-items: center; justify-content: space-between;
+  cursor: pointer; transition: var(--t);
+}
+.pactes-toggle:hover { color: var(--text); background: rgba(255,255,255,.03); }
+#pactes-chevron { transition: transform .3s ease; flex-shrink: 0; }
+.pactes-body {
+  max-height: 0; overflow: hidden;
+  transition: max-height .4s cubic-bezier(.4,0,.2,1);
+}
+.pactes-body.open { max-height: 1200px; }
+
+.pacte-item { border-top: 1px solid var(--border); }
+.pacte-sub-toggle {
+  width: 100%; padding: 10px 20px;
+  background: transparent; border: none;
+  color: var(--text-dim); font-size: 11px;
+  font-family: 'Inter', sans-serif; letter-spacing: .3px;
+  display: flex; align-items: center; justify-content: space-between;
+  cursor: pointer; transition: var(--t);
+}
+.pacte-sub-toggle:hover { color: var(--text); background: rgba(255,255,255,.03); }
+.sub-chevron { transition: transform .3s ease; flex-shrink: 0; }
+.pacte-sub-body {
+  max-height: 0; overflow: hidden;
+  transition: max-height .35s cubic-bezier(.4,0,.2,1);
+}
+.pacte-sub-body.open { max-height: 900px; }
+
+/* Verrouillage troc actif */
+#toggle-pacte.locked {
+  color: #fbbf24;
+  /* pointer-events:none SUPPRIMÉ — causait le clic dans le vide */
+}
+#toggle-pacte.locked::after {
+  content: ' 🔒'; font-size: 10px;
+}
+/* Sidebar — scroll fluide sans scrollbar visible */
+#sidebar {
+  overflow-y: auto;
+  scroll-behavior: smooth;
+}
+#sidebar::-webkit-scrollbar {
+  width: 3px;
+}
+#sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+#sidebar::-webkit-scrollbar-thumb {
+  background: rgba(168,85,247,.25);
+  border-radius: 99px;
+  transition: background .3s;
+}
+#sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(168,85,247,.5);
+}
+/* Firefox */
+#sidebar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(168,85,247,.25) transparent;
 }

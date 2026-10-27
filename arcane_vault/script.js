@@ -121,7 +121,8 @@ let state = {
   inventory: {},
   fragments: 0,
   forceLegendary: false,
-  mjActive: false
+  mjActive: false,
+ pseudo: ''           // ← AJOUT
 };
 
 function saveState(){ localStorage.setItem(LSKEY, JSON.stringify(state)); }
@@ -142,6 +143,8 @@ function loadState(){
       setTimeout(()=>showToast('🔄 Mise à jour majeure — inventaire réinitialisé'),500);
     } else {
       state = Object.assign(state, saved);
+      // Nettoyer un activeTrade résiduel corrompu
+      if(state.activeTrade && !state.activeTrade.giveKey) state.activeTrade = null;
       state.version = CURRENT_VERSION;
       if(smin !== cmin){
         // Reset clés uniquement, conserve inventaire
@@ -380,8 +383,19 @@ function resetToChest(){
 // INVENTORY SIDEBAR
 // ============================================================
 let activeTab='all';
-function openSidebar(){ document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); renderInventory(); }
-function closeSidebar(){ document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
+function openSidebar(){ document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); renderInventory(); refreshTradeSelect(); }
+function closeSidebar(){
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('overlay').classList.remove('show');
+  // Réinitialiser accordéon sauf si troc actif
+  if(!state.activeTrade){
+    pactesOpen = false;
+    document.getElementById('pactes-body').classList.remove('open');
+    document.getElementById('pactes-chevron').style.transform = '';
+    closePacteSection('grimoire');
+    closePacteSection('pacte');
+  }
+}
 
 function recycleByIndex(idx, e){ recycleItem(window._invKeys[idx], e); }
 function recycleItem(lootKey, e){
@@ -401,9 +415,16 @@ function recycleItem(lootKey, e){
     showToast(`♻ Fragment récupéré (${state.fragments}/${FRAGS_PER_KEY})`);
   }
   renderInventory();
+  refreshTradeSelect(); // ← AJOUTER
 }
 
 function renderInventory(){
+    // Badge joueur
+  const badge = document.getElementById('player-badge');
+  if(badge) badge.innerHTML = state.pseudo
+    ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'
+      + '&nbsp;Aventurier :&nbsp;<strong>' + state.pseudo + '</strong>'
+    : '';
   const search=document.getElementById('search-input').value.toLowerCase();
   const entries=Object.entries(state.inventory).filter(([,c])=>c>0);
 
@@ -471,7 +492,9 @@ document.getElementById('logo-click').addEventListener('click',()=>{
   if(logoClicks>=5){ logoClicks=0; openMJModal(); }
 });
 let invBtnClicks=0, invBtnTimer=null;
-document.querySelector('.inv-btn').addEventListener('click',()=>{
+document.querySelector('.inv-btn').addEventListener('click', function(e){
+  // Ignorer les clics venant de l'intérieur de la sidebar
+  if(document.getElementById('sidebar').contains(e.target)) return;
   invBtnClicks++;
   clearTimeout(invBtnTimer);
   invBtnTimer=setTimeout(()=>invBtnClicks=0,1500);
@@ -495,6 +518,45 @@ function checkMJCode(){
     }
   }
 }
+function closeMJPanel(){
+  document.getElementById('mj-panel').classList.remove('show');
+  state.mjActive=false;
+  showToast('Mode MJ désactivé');
+}
+function mjRenamePseudo(){
+  const np = prompt('Nouveau pseudo (2–15 caractères) :', state.pseudo||'');
+  if(np === null) return;
+  const trimmed = np.trim();
+  if(trimmed.length < 2 || trimmed.length > 15){
+    showToast('❌ Pseudo invalide (2–15 caractères)'); return;
+  }
+  state.pseudo = trimmed; saveState();
+  renderInventory();
+  showToast('✎ Pseudo mis à jour : ' + trimmed);
+}
+
+function mjAddItem(){
+  if(!loots || !loots.length){ showToast('❌ data.js non chargé'); return; }
+  const query = prompt('Nom de l\'objet à ajouter (recherche partielle) :');
+  if(!query) return;
+  const matches = loots.filter(l => l.split('|')[0].toLowerCase().includes(query.toLowerCase()));
+  if(!matches.length){ showToast('❌ Aucun objet trouvé pour : ' + query); return; }
+  const display = matches.slice(0, 8);
+  let msg = display.map((l,i) => (i+1) + '. ' + l.split('|')[0]).join('\n');
+  if(matches.length > 8) msg += '\n… (' + (matches.length-8) + ' autres, affinez la recherche)';
+  const raw = prompt('Résultats :\n' + msg + '\n\nNuméro à ajouter (1-' + display.length + ') :');
+  if(raw === null) return;
+  const idx = parseInt(raw);
+  if(isNaN(idx) || idx < 1 || idx > display.length){ showToast('❌ Choix invalide (1-' + display.length + ')'); return; }
+  const lootStr = display[idx-1];
+  const name = lootStr.split('|')[0];
+  state.inventory[lootStr] = (state.inventory[lootStr]||0) + 1;
+  if(!state.mjAdded) state.mjAdded = [];
+  state.mjAdded.push({ name, ts: Date.now() });
+  saveState(); renderInventory(); refreshTradeSelect();
+  showToast('⚙ MJ : "' + name + '" ajouté');
+}
+
 function closeModal(){ document.getElementById('modal').classList.remove('show'); }
 function mjResetKeys(){ state.keys=MAX_KEYS; state.lastRegen=Date.now(); saveState(); updateTimer(); document.getElementById('open-btn').disabled=false; showToast('⚿ Clés rechargées !'); }
 function updateForceLegendary(){ state.forceLegendary=document.getElementById('force-legendary').checked; saveState(); showToast(state.forceLegendary?'☆ Prochain drop : ARTEFACT forcé':'Drop aléatoire rétabli'); }
@@ -513,25 +575,224 @@ function showToast(msg){
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeModal(); });
 
 // ============================================================
+// ÉTAPE C — EXPORT / IMPORT / INSPECTION
+// ============================================================
+
+const PROFILE_PREFIX = 'AV1-';
+
+function exportProfileCode(){
+  const payload = {
+    pseudo:    state.pseudo,
+    inventory: state.inventory,
+    fragments: state.fragments,
+    keys:      state.keys,
+    version:   state.version
+  };
+  try {
+    // btoa safe unicode
+    const json   = JSON.stringify(payload);
+    const b64    = btoa(unescape(encodeURIComponent(json)));
+    const code   = PROFILE_PREFIX + b64;
+    navigator.clipboard.writeText(code)
+      .then(()=> showToast('✓ Code copié dans le presse-papier !'))
+      .catch(()=>{ prompt('Copie ce code :', code); });
+  } catch(e){ showToast('❌ Erreur lors de l\'export'); }
+}
+
+function toggleInspectInput(){
+  const w = document.getElementById('inspect-input-wrap');
+  w.style.display = w.style.display === 'none' ? 'block' : 'none';
+}
+
+function toggleLoadInput(){
+  const w = document.getElementById('load-input-wrap');
+  w.style.display = w.style.display === 'none' ? 'block' : 'none';
+  // Fermer l'autre si ouvert
+  document.getElementById('inspect-input-wrap').style.display = 'none';
+}
+
+function toggleInspectInput(){
+  const w = document.getElementById('inspect-input-wrap');
+  w.style.display = w.style.display === 'none' ? 'block' : 'none';
+  // Fermer l'autre si ouvert
+  document.getElementById('load-input-wrap').style.display = 'none';
+}
+
+function runLoad(){
+  const raw = document.getElementById('load-code-input').value.trim();
+  if(!raw.startsWith(PROFILE_PREFIX)){ showToast('❌ Code invalide (doit commencer par AV1-)'); return; }
+  try {
+    const json    = decodeURIComponent(escape(atob(raw.slice(PROFILE_PREFIX.length))));
+    const payload = JSON.parse(json);
+    if(!payload.pseudo || !payload.inventory) throw new Error();
+
+    // SÉCURITÉ ANTI-ROLLBACK
+    const incomingNonce = payload.lastTradeNonce || 0;
+    const localNonce    = state.lastTradeNonce   || 0;
+    if(incomingNonce < localNonce){
+      showToast('🚫 FRAUDE DÉTECTÉE — Sauvegarde antérieure à un troc validé. Chargement refusé.');
+      return;
+    }
+
+    // Écrasement total
+    state.pseudo          = payload.pseudo;
+    state.inventory       = payload.inventory;
+    state.fragments       = payload.fragments || 0;
+    state.keys            = Math.min(payload.keys || 0, MAX_KEYS);
+    state.lastTradeNonce  = incomingNonce; // ← conserver le nonce du profil chargé
+    state.processedNonces = payload.processedNonces || [];
+    state.lastRegen       = Date.now();
+    state.version         = CURRENT_VERSION;
+    saveState(); renderInventory(); updateTimer();
+    showToast('💾 Profil de ' + payload.pseudo + ' restauré !');
+    document.getElementById('load-input-wrap').style.display = 'none';
+    document.getElementById('load-code-input').value = '';
+
+  } catch(e){ showToast('❌ Code corrompu ou illisible'); }
+}
+
+function runInspect(){
+  const raw = document.getElementById('inspect-code-input').value.trim();
+  if(!raw.startsWith(PROFILE_PREFIX)){ showToast('❌ Code invalide (doit commencer par AV1-)'); return; }
+  try {
+    const json    = decodeURIComponent(escape(atob(raw.slice(PROFILE_PREFIX.length))));
+    const payload = JSON.parse(json);
+    if(!payload.pseudo || !payload.inventory) throw new Error();
+    openInspectPanel(payload);
+  } catch(e){ showToast('❌ Code corrompu ou illisible'); }
+}
+
+function openInspectPanel(payload){
+  // Masquer le contenu normal, afficher le panneau inspection
+  ['completion-bar','search-wrap','sidebar-tabs','inv-list','inv-stats','share-section']
+    .forEach(id =>{ const el=document.getElementById(id)||document.querySelector('.'+id);
+      if(el) el.style.display='none'; });
+  document.getElementById('player-badge').style.display = 'none';
+
+  const panel = document.getElementById('inspect-panel');
+  panel.style.display = 'flex';
+
+  document.getElementById('inspect-title').textContent =
+    '👁 ' + payload.pseudo;
+
+  // Barre de complétion
+  const total     = loots.length;
+  const discovered = Object.keys(payload.inventory).filter(k=>payload.inventory[k]>0).length;
+  const pct        = total > 0 ? Math.round(discovered/total*100) : 0;
+  document.getElementById('inspect-completion-text').textContent =
+    'Collection : ' + discovered + ' / ' + total + ' objets uniques';
+  document.getElementById('inspect-completion-pct').textContent = pct + '%';
+  document.getElementById('inspect-completion-fill').style.width = pct + '%';
+
+  // Liste objets (lecture seule, triée par rareté)
+  const order = {A:0,L:1,TR:2,R:3,PC:4,C:5};
+  const entries = Object.entries(payload.inventory)
+    .filter(([,c])=>c>0)
+    .sort(([a],[b])=>(order[a.split('|')[3]]??9)-(order[b.split('|')[3]]??9));
+
+  const list = document.getElementById('inspect-inv-list');
+  list.innerHTML = entries.length ? entries.map(([k,cnt])=>{
+    const [n,lnk,,rar] = k.split('|');
+    return '<div class="inv-item" onclick="window.open(\'' + lnk.replace(/'/g,"\\'") + '\',\'_blank\')">'
+      + '<div class="inv-dot" style="background:' + (RARITY_DOTS[rar]||'#666') + '"></div>'
+      + '<span class="inv-name">' + n + '</span>'
+      + (cnt>1 ? '<span class="inv-count rc-'+rar+'">×'+cnt+'</span>' : '')
+      + '</div>';
+  }).join('')
+  : '<div class="inv-empty">Inventaire vide.</div>';
+
+  // Stats
+  const stats={A:0,L:0,TR:0,R:0,PC:0,C:0};
+  entries.forEach(([k])=>{ const r=k.split('|')[3]; if(stats[r]!==undefined) stats[r]++; });
+  document.getElementById('inspect-inv-stats').innerHTML =
+    Object.entries(stats).map(([k,v])=>
+      '<div class="stat-chip"><span class="stat-num rc-'+k+'">'+v+'</span><span class="stat-lbl">'+k+'</span></div>'
+    ).join('');
+}
+
+function closeInspect(){
+  document.getElementById('inspect-panel').style.display = 'none';
+  // Restaurer les sections normales
+  // Remplacer la ligne restoreIds par :
+const restoreIds = ['completion-bar','search-wrap','sidebar-tabs','inv-list','inv-stats','share-section'];
+  restoreIds.forEach(id =>{
+    const el = document.getElementById(id) || document.querySelector('.'+id);
+    if(el) el.style.display = '';
+  });
+  document.getElementById('player-badge').style.display = '';
+  document.getElementById('inspect-code-input').value = '';
+  document.getElementById('inspect-input-wrap').style.display = 'none';
+  document.getElementById('load-code-input').value = '';
+  document.getElementById('load-input-wrap').style.display = 'none';
+  renderInventory();
+}
+
+// ============================================================
 // INIT
 // ============================================================
 window.onload = function() {
-  // Enregistrement du Service Worker pour le mode hors-ligne
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js')
-      .then(() => console.log('SW enregistré avec succès'))
-      .catch(err => console.error('Erreur d\'enregistrement SW', err));
+    navigator.serviceWorker.register('/mcc/arcane_vault/sw.js')
+      .then(() => console.log('SW enregistré'))
+      .catch(err => console.error('Erreur SW', err));
   }
-  
-  // Logique d'initialisation existante
+
   loadState();
   processRegen();
   initStars();
+
+  // Étape B — gestion écran d'accueil
+  const welcome = document.getElementById('welcome-screen');
+  if(state.pseudo && state.pseudo.length >= 2){
+    // Joueur connu : bypass écran d'accueil
+    welcome.style.display = 'none';
+    bootApp();
+  } else {
+    // Nouveau joueur : afficher l'écran d'accueil, masquer #app
+    document.getElementById('app').style.visibility = 'hidden';
+    document.getElementById('app').style.opacity = '0';
+  }
+};
+
+function bootApp(){
   updateTimer();
-  setInterval(updateTimer,1000);
-  document.getElementById('open-btn').disabled=state.keys<=0;
-  document.getElementById('card-area').style.display='none';
-  document.getElementById('chest-wrap').style.display='flex';
+  setInterval(updateTimer, 1000);
+  document.getElementById('open-btn').disabled = state.keys <= 0;
+  document.getElementById('card-area').style.display = 'none';
+  document.getElementById('chest-wrap').style.display = 'flex';
+}
+
+function validatePseudoInput(){
+  const val = document.getElementById('pseudo-input').value.trim();
+  const hint = document.getElementById('pseudo-hint');
+  const btn = document.getElementById('welcome-btn');
+  if(val.length === 0){
+    hint.textContent = ''; hint.className = 'welcome-hint';
+    btn.disabled = true;
+  } else if(val.length < 2){
+    hint.textContent = 'Minimum 2 caractères.';
+    hint.className = 'welcome-hint error'; btn.disabled = true;
+  } else {
+    hint.textContent = 'Prêt à entrer dans le Vault, ' + val + ' !';
+    hint.className = 'welcome-hint ok'; btn.disabled = false;
+  }
+}
+
+function submitPseudo(){
+  const val = document.getElementById('pseudo-input').value.trim();
+  if(val.length < 2 || val.length > 15) return;
+  state.pseudo = val; saveState();
+
+  const welcome = document.getElementById('welcome-screen');
+  const appEl = document.getElementById('app');
+  welcome.classList.add('hidden');
+  appEl.style.visibility = 'visible';
+  appEl.style.opacity = '0';
+  appEl.style.transition = 'opacity .5s ease';
+  requestAnimationFrame(()=> requestAnimationFrame(()=>{ appEl.style.opacity = '1'; }));
+
+  bootApp();
+
 };
 
 
@@ -573,3 +834,306 @@ window.addEventListener('click', function(e) {
     const modal = document.getElementById('legal-modal');
     if (e.target === modal) closeLegalModal();
 });
+
+// ============================================================
+// ÉTAPE D — TROC SÉCURISÉ (flux 2 temps)
+// ============================================================
+
+const TRADE_PREFIX = 'AV-TRD-';
+const CONFIRM_PREFIX = 'AV-TRD-CFM-';
+
+function _genConfirmCode(nonce){
+  // Code court déterministe B-XXXX basé sur le nonce
+  const n = (nonce % 9000) + 1000;
+  return 'B-' + n;
+}
+
+function refreshTradeSelect(){
+  const sel = document.getElementById('trade-give-select');
+  if(!sel) return;
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">— Sélectionner —</option>';
+  Object.entries(state.inventory)
+    .filter(([,c]) => c >= 1)
+    .sort(([a],[b]) => a.localeCompare(b))
+    .forEach(([k]) => {
+      const [n,,,r] = k.split('|');
+      const opt = document.createElement('option');
+      opt.value = k;
+      opt.textContent = n + ' (' + (RARITY_LABELS[r]||r) + ')';
+      sel.appendChild(opt);
+    });
+  if(prev) sel.value = prev;
+}
+
+// ── ÉTAPE 1 : DONNEUR forge le contrat ──────────────────────
+function forgeTradeContract(){
+  const giveKey  = document.getElementById('trade-give-select').value.trim();
+  const wantName = document.getElementById('trade-want-input').value.trim();
+
+  if(!giveKey){ showToast('❌ Sélectionne un objet à proposer'); return; }
+  if(wantName.length < 2){ showToast('❌ Indique l\'objet désiré'); return; }
+  if((state.inventory[giveKey]||0) < 1){
+    showToast('❌ Tu ne possèdes plus cet objet'); return;
+  }
+  if(state.activeTrade){
+    showToast('⚠ Un contrat est déjà en cours — annule-le avant d\'en créer un nouveau');
+    lockPacteSection();
+    return;
+  }
+
+  const nonce = Date.now();
+  const confirmCode = _genConfirmCode(nonce);
+  const [giveName,,,giveRar] = giveKey.split('|');
+
+  // Séquestrer l'objet
+  state.inventory[giveKey]--;
+  if(state.inventory[giveKey] <= 0) delete state.inventory[giveKey];
+
+  state.activeTrade = { nonce, giveKey, giveName, giveRar, wantName, from: state.pseudo, step: 'waiting_confirm' };
+  state.lastTradeNonce = nonce;
+  saveState(); renderInventory(); refreshTradeSelect();
+
+  // Le confirmCode est embarqué dans le contrat (lisible par le receveur après traitement)
+  const contract = { nonce, from: state.pseudo, giveKey, giveName, giveRar, wantName, confirmCode };
+  const code = TRADE_PREFIX + btoa(unescape(encodeURIComponent(JSON.stringify(contract))));
+  document.getElementById('trade-contract-out').value = code;
+  document.getElementById('trade-contract-wrap').style.display = 'block';
+
+  // Afficher zone saisie code de confirmation
+  _showConfirmInputZone();
+  lockPacteSection();
+  showToast('🔒 ' + giveName + ' séquestré — transmets le contrat à ton partenaire');
+}
+
+function _showConfirmInputZone(){
+  // Injecter dynamiquement la zone de saisie du code B-XXXX si absente
+  if(document.getElementById('confirm-code-wrap')) return;
+  const wrap = document.createElement('div');
+  wrap.id = 'confirm-code-wrap';
+  wrap.style.cssText = 'margin-top:10px';
+  wrap.innerHTML =
+    '<div class="trade-label" style="color:#fbbf24">⏳ En attente de l\'objet B — Saisis le code de confirmation reçu</div>'
+    + '<input id="confirm-code-input" class="search-input" type="text" placeholder="B-XXXX…" autocomplete="off" style="margin-top:6px">'
+    + '<button class="share-btn share-btn-trade" style="margin-top:6px;width:100%" onclick="validateConfirmCode()">✅ Valider et recevoir l\'objet</button>';
+  document.getElementById('trade-contract-wrap').after(wrap);
+}
+
+function copyTradeContract(){
+  const code = document.getElementById('trade-contract-out').value;
+  navigator.clipboard.writeText(code)
+    .then(()=> showToast('📋 Contrat copié !'))
+    .catch(()=> prompt('Copie ce contrat :', code));
+}
+
+// ── ÉTAPE 2 : RECEVEUR traite le contrat ────────────────────
+function processTradeContract(){
+  const raw = document.getElementById('trade-incoming-input').value.trim();
+  if(!raw.startsWith(TRADE_PREFIX) || raw.startsWith(CONFIRM_PREFIX)){
+    showToast('❌ Code invalide (doit commencer par AV-TRD-)'); return;
+  }
+
+  let contract;
+  try {
+    contract = JSON.parse(decodeURIComponent(escape(atob(raw.slice(TRADE_PREFIX.length)))));
+  } catch(e){ showToast('❌ Contrat corrompu'); return; }
+
+  const { nonce, from, giveKey, giveName, giveRar, wantName, confirmCode } = contract;
+
+  if(from === state.pseudo){ showToast('❌ Tu ne peux pas traiter ton propre contrat'); return; }
+  if(state.processedNonces && state.processedNonces.includes(nonce)){ showToast('🚫 Ce contrat a déjà été traité'); return; }
+
+  // Chercher l'objet demandé (possédé en au moins 1)
+  const wantKey = Object.keys(state.inventory).find(k =>
+    k.split('|')[0].toLowerCase() === wantName.toLowerCase() && (state.inventory[k]||0) >= 1
+  );
+  if(!wantKey){
+    showToast('❌ Tu ne possèdes pas "' + wantName + '"'); return;
+  }
+
+  const [wantDisplayName,,,wantRar] = wantKey.split('|');
+  openTradeConfirmModal({ nonce, giveKey, giveName, giveRar, wantKey, wantDisplayName, wantRar, from, confirmCode });
+}
+
+// ── MODALE CONFIRMATION RECEVEUR ────────────────────────────
+function openTradeConfirmModal(t){
+  const box = document.querySelector('.modal-box');
+  box.innerHTML =
+    '<div class="modal-title" style="color:var(--c-tr)">⚔ Confirmer le Troc</div>'
+    + '<div style="font-size:12px;color:var(--text-dim);line-height:1.8;margin-bottom:16px;">'
+    + 'Partenaire : <strong style="color:var(--text)">' + t.from + '</strong><br>'
+    + 'Tu <strong style="color:#f87171">donnes</strong> : <span class="rc-' + t.wantRar + '">' + t.wantDisplayName + '</span><br>'
+    + 'Tu <strong style="color:#4ade80">reçois</strong> : <span class="rc-' + t.giveRar + '">' + t.giveName + '</span><br><br>'
+    + '<span style="color:#f87171;font-size:11px;">⚠ Après confirmation, ton objet quitte définitivement ton inventaire.<br>'
+    + 'Un code de confirmation sera affiché — transmets-le au donneur pour finaliser.</span>'
+    + '</div>'
+    + '<div class="modal-btns">'
+    + '<button class="modal-btn" onclick="cancelTradeConfirm()">Annuler</button>'
+    + '<button class="modal-btn confirm" onclick="executeTrade(' + JSON.stringify(t).replace(/"/g,'&quot;') + ')">Confirmer</button>'
+    + '</div>';
+  document.getElementById('modal').classList.add('show');
+}
+
+function cancelTradeConfirm(){
+  const box = document.querySelector('.modal-box');
+  box.innerHTML =
+    '<div class="modal-title">⚿ CODE MAÎTRE</div>'
+    + '<input class="modal-input" id="mj-input" type="password" maxlength="4" placeholder="····" oninput="checkMJCode()">'
+    + '<div class="modal-btns"><button class="modal-btn" onclick="closeModal()">Annuler</button></div>';
+  closeModal();
+}
+
+// ── ÉTAPE 2b : Exécution côté receveur ──────────────────────
+function executeTrade(t){
+  closeModal();
+
+  // Receveur perd son objet B
+  state.inventory[t.wantKey]--;
+  if(state.inventory[t.wantKey] <= 0) delete state.inventory[t.wantKey];
+
+  // Receveur reçoit objet A
+  state.inventory[t.giveKey] = (state.inventory[t.giveKey]||0) + 1;
+
+  if(!state.processedNonces) state.processedNonces = [];
+  state.processedNonces.push(t.nonce);
+  if(state.processedNonces.length > 20) state.processedNonces.shift();
+  state.lastTradeNonce = Math.max(state.lastTradeNonce||0, t.nonce);
+
+  saveState(); renderInventory(); refreshTradeSelect();
+  document.getElementById('trade-incoming-input').value = '';
+
+  // Afficher le code de confirmation en clair pour le transmettre au donneur
+  _showReceiverConfirmCode(t.confirmCode, t.giveName, t.wantDisplayName);
+}
+
+function _showReceiverConfirmCode(code, received, given){
+  const box = document.querySelector('.modal-box');
+  box.innerHTML =
+    '<div class="modal-title" style="color:#4ade80">✅ Troc Effectué !</div>'
+    + '<div style="font-size:12px;color:var(--text-dim);line-height:1.8;margin-bottom:12px;">'
+    + 'Tu as reçu : <strong class="rc-L">' + received + '</strong><br>'
+    + 'Tu as donné : <strong>' + given + '</strong><br><br>'
+    + '<span style="color:#fbbf24">Transmets ce code au donneur pour qu\'il reçoive son objet :</span>'
+    + '</div>'
+    + '<div style="font-family:monospace;font-size:22px;text-align:center;color:#fbbf24;letter-spacing:4px;padding:12px;background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.3);border-radius:10px;margin-bottom:14px;">' + code + '</div>'
+    + '<div class="modal-btns">'
+    + '<button class="modal-btn" onclick="copyConfirmCode(\'' + code + '\')">📋 Copier le code</button>'
+    + '<button class="modal-btn confirm" onclick="cancelTradeConfirm()">Fermer</button>'
+    + '</div>';
+  document.getElementById('modal').classList.add('show');
+}
+
+function copyConfirmCode(code){
+  navigator.clipboard.writeText(code)
+    .then(()=> showToast('📋 Code ' + code + ' copié !'))
+    .catch(()=> prompt('Code de confirmation :', code));
+}
+
+// ── ÉTAPE 3 : DONNEUR valide avec le code B-XXXX ────────────
+function validateConfirmCode(){
+  if(!state.activeTrade){ showToast('❌ Aucun contrat actif'); return; }
+  const input = document.getElementById('confirm-code-input');
+  if(!input){ showToast('❌ Zone de saisie introuvable'); return; }
+  const entered = input.value.trim().toUpperCase();
+  const expected = _genConfirmCode(state.activeTrade.nonce).toUpperCase();
+
+  if(entered !== expected){
+    showToast('🚫 Code incorrect — le receveur n\'a pas encore validé ou code erroné');
+    return;
+  }
+
+  // Donneur reçoit l'objet B demandé
+  const wantKey = Object.keys(loots ? loots : []).length > 0
+    ? loots.find(l => l.split('|')[0].toLowerCase() === state.activeTrade.wantName.toLowerCase())
+    : null;
+
+  // On cherche wantKey dans l'inventaire global (loots)
+  const wantLootStr = loots && loots.find(l => l.split('|')[0].toLowerCase() === state.activeTrade.wantName.toLowerCase());
+
+  const tradeCopy = Object.assign({}, state.activeTrade);
+  state.activeTrade = null;
+
+  if(wantLootStr){
+    state.inventory[wantLootStr] = (state.inventory[wantLootStr]||0) + 1;
+    showToast('🎉 Troc finalisé ! Tu as reçu : ' + wantLootStr.split('|')[0]);
+  } else {
+    showToast('⚠ Troc finalisé mais objet "' + tradeCopy.wantName + '" introuvable dans data.js — contacte le MJ');
+  }
+
+  saveState(); renderInventory(); refreshTradeSelect();
+
+  // Nettoyer UI
+  const confirmWrap = document.getElementById('confirm-code-wrap');
+  if(confirmWrap) confirmWrap.remove();
+  document.getElementById('trade-contract-wrap').style.display = 'none';
+  document.getElementById('trade-contract-out').value = '';
+  document.getElementById('trade-want-input').value = '';
+  unlockPacteSection();
+}
+
+// ── ANNULER ──────────────────────────────────────────────────
+function cancelActiveTrade(){
+  if(!state.activeTrade) return;
+  // Restituer l'objet séquestré AU DONNEUR
+  state.inventory[state.activeTrade.giveKey] =
+    (state.inventory[state.activeTrade.giveKey]||0) + 1;
+  state.activeTrade = null;
+  saveState(); renderInventory(); refreshTradeSelect();
+
+  const confirmWrap = document.getElementById('confirm-code-wrap');
+  if(confirmWrap) confirmWrap.remove();
+  document.getElementById('trade-contract-wrap').style.display = 'none';
+  document.getElementById('trade-contract-out').value = '';
+
+  showToast('↩ Contrat annulé — objet restitué à ton inventaire');
+  unlockPacteSection();
+}
+
+// ── ACCORDÉON ────────────────────────────────────────────────
+let pactesOpen = false;
+
+function togglePactesMenu(){
+  if(pactesOpen && state.activeTrade){
+    showToast('🔒 Un pacte est en cours — annule ou finalise le troc avant de fermer');
+    return;
+  }
+  pactesOpen = !pactesOpen;
+  document.getElementById('pactes-body').classList.toggle('open', pactesOpen);
+  document.getElementById('pactes-chevron').style.transform = pactesOpen ? 'rotate(180deg)' : '';
+  if(!pactesOpen){ closePacteSection('grimoire'); closePacteSection('pacte'); }
+}
+
+function togglePacteSection(id){
+  const isOpen = document.getElementById('body-' + id).classList.contains('open');
+  if(id === 'pacte' && isOpen && state.activeTrade){
+    showToast('🔒 Annule ou finalise le troc avant de replier cette section'); return;
+  }
+  const other = id === 'grimoire' ? 'pacte' : 'grimoire';
+  closePacteSection(other);
+  if(isOpen) closePacteSection(id);
+  else openPacteSection(id);
+}
+
+function openPacteSection(id){
+  document.getElementById('body-' + id).classList.add('open');
+  document.getElementById('chev-' + id).style.transform = 'rotate(180deg)';
+}
+function closePacteSection(id){
+  document.getElementById('body-' + id).classList.remove('open');
+  document.getElementById('chev-' + id).style.transform = '';
+}
+function lockPacteSection(){ 
+  const btn = document.getElementById('toggle-pacte');
+  if(btn) btn.classList.add('locked');
+  if(!pactesOpen){
+    pactesOpen=true;
+    document.getElementById('pactes-body').classList.add('open');
+    document.getElementById('pactes-chevron').style.transform='rotate(180deg)';
+  }
+  openPacteSection('pacte');
+  closePacteSection('grimoire');
+}
+function unlockPacteSection(){
+  const btn = document.getElementById('toggle-pacte');
+  if(btn) btn.classList.remove('locked');
+}

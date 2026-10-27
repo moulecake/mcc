@@ -15,17 +15,28 @@
     <script src="data.js" defer></script>
     <script src="script.js" defer></script>
 
-    <!-- PWA iOS support -->
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Arcane Vault">
-    <link rel="apple-touch-icon" href="icon-192.png">
-
 </head>
 <body>
 
 <div class="stars" id="stars"></div>
 <div id="flash"></div>
+<!-- ÉCRAN D'ACCUEIL — Profil Joueur -->
+<div id="welcome-screen">
+  <div class="welcome-box">
+    <div class="welcome-rune">✦</div>
+    <h1 class="welcome-title">ARCANE VAULT</h1>
+    <p class="welcome-sub">Les portes du destin s'ouvrent à ceux qui osent entrer.</p>
+    <div class="welcome-input-wrap">
+      <input id="pseudo-input" class="welcome-input" type="text" maxlength="15"
+        placeholder="Nom d'Aventurier…" autocomplete="off"
+        oninput="validatePseudoInput()" onkeydown="if(event.key==='Enter')submitPseudo()">
+      <div class="welcome-hint" id="pseudo-hint"></div>
+    </div>
+    <button class="welcome-btn" id="welcome-btn" onclick="submitPseudo()" disabled>
+      <span>⚔ Rejoindre l'Arcane Vault</span>
+    </button>
+  </div>
+</div>
 
 <div id="app">
   <header>
@@ -101,6 +112,7 @@
     <span class="sidebar-title">✦ Inventaire</span>
     <button class="close-btn" onclick="closeSidebar()">✕</button>
   </div>
+  <div class="player-badge" id="player-badge"></div>
   <div class="completion-bar">
     <div class="completion-label">
       <span id="completion-text">Collection : 0 / 0</span>
@@ -114,7 +126,85 @@
   <div class="sidebar-tabs" id="sidebar-tabs"></div>
   <div class="inv-list" id="inv-list"></div>
   <div class="inv-stats" id="inv-stats"></div>
+
+<!-- 🔮 PACTES & GRIMOIRES — Menu accordéon centralisé -->
+<div id="pactes-menu">
+  <button class="pactes-toggle" onclick="togglePactesMenu()">
+    <span>🔮 Pactes &amp; Grimoires</span>
+    <svg id="pactes-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+  </button>
+
+  <div id="pactes-body" class="pactes-body">
+
+    <!-- SOUS-SECTION A : Grimoire de Sauvegarde -->
+    <div class="pacte-item">
+      <button class="pacte-sub-toggle" onclick="togglePacteSection('grimoire')">
+        <span>📖 Grimoire de Sauvegarde</span>
+        <svg class="sub-chevron" id="chev-grimoire" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="pacte-sub-body" id="body-grimoire">
+        <div class="share-section" style="border-top:none;padding-top:4px">
+          <button class="share-btn" onclick="exportProfileCode()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>
+            Copier mon Code de Profil
+          </button>
+          <button class="share-btn share-btn-load" onclick="toggleLoadInput()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            Charger ma Sauvegarde
+          </button>
+          <div id="load-input-wrap" style="display:none;margin-top:8px;">
+            <div class="share-warning">⚠ Ceci écrasera ton inventaire, tes fragments et tes clés actuels. Action irréversible.</div>
+            <textarea id="load-code-input" class="inspect-textarea" placeholder="Colle ton code AV1-… ici…" rows="3"></textarea>
+            <button class="share-btn share-btn-danger" style="margin-top:6px;width:100%" onclick="runLoad()">💾 Restaurer ce Profil</button>
+          </div>
+          <button class="share-btn share-btn-inspect" onclick="toggleInspectInput()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/><circle cx="11" cy="11" r="3"/></svg>
+            Inspecter un Aventurier
+          </button>
+          <div id="inspect-input-wrap" style="display:none;margin-top:8px;">
+            <textarea id="inspect-code-input" class="inspect-textarea" placeholder="Colle le code AV1-… d'un ami…" rows="3"></textarea>
+            <button class="share-btn share-btn-inspect" style="margin-top:6px;width:100%" onclick="runInspect()">👁 Lancer l'Inspection</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SOUS-SECTION B : Pacte d'Échange -->
+    <div class="pacte-item">
+      <button class="pacte-sub-toggle" id="toggle-pacte" onclick="togglePacteSection('pacte')">
+        <span>⚔ Pacte d'Échange</span>
+        <svg class="sub-chevron" id="chev-pacte" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="pacte-sub-body" id="body-pacte">
+        <div class="share-section" id="trade-section" style="border-top:none;padding-top:4px">
+          <div class="trade-label">Objet à proposer</div>
+          <select id="trade-give-select" class="trade-select">
+            <option value="">— Sélectionner —</option>
+          </select>
+          <div class="trade-label" style="margin-top:8px">Objet désiré en échange</div>
+          <input id="trade-want-input" class="search-input" type="text" placeholder="Nom exact de l'objet…" autocomplete="off">
+          <button class="share-btn share-btn-trade" style="margin-top:10px" onclick="forgeTradeContract()">
+            ⚔ Forger le Contrat Magique de Troc
+          </button>
+          <div id="trade-contract-wrap" style="display:none;margin-top:8px;">
+            <div class="share-warning" style="color:#fbbf24;border-color:rgba(251,191,36,.3);background:rgba(251,191,36,.06);">
+              🔒 L'objet est séquestré. Transmets ce code à ton partenaire.
+            </div>
+            <textarea id="trade-contract-out" class="inspect-textarea" rows="3" readonly></textarea>
+            <button class="share-btn" style="margin-top:6px;width:100%" onclick="copyTradeContract()">📋 Copier le Contrat</button>
+            <button class="share-btn share-btn-danger" style="margin-top:6px;width:100%" onclick="cancelActiveTrade()">↩ Annuler le Troc</button>
+          </div>
+          <div class="trade-label" style="margin-top:12px">Traiter une transaction reçue</div>
+          <textarea id="trade-incoming-input" class="inspect-textarea" placeholder="Colle ici le contrat AV-TRD-… reçu…" rows="3"></textarea>
+          <button class="share-btn share-btn-inspect" style="margin-top:6px;width:100%" onclick="processTradeContract()">📜 Traiter une Transaction</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- fin pactes-body -->
+</div><!-- fin pactes-menu -->
 </div>
+
 
 <!-- Modal MJ -->
 <div id="modal">
@@ -128,9 +218,13 @@
 </div>
 
 <!-- MJ Panel -->
+
 <div id="mj-panel">
   <div class="mj-title">⚙ MODE MAÎTRE DU JEU</div>
   <button class="mj-btn" onclick="mjResetKeys()">⚿ Recharger les 3 Clés</button>
+   <button class="mj-btn" onclick="mjRenamePseudo()">✎ Modifier le Pseudo</button>
+   <button class="mj-btn" onclick="mjAddItem()">⚙ Ajouter un Objet (Debug)</button>
+   <button class="mj-btn mj-btn-close" onclick="closeMJPanel()">✕ Fermer le Mode MJ</button>
   <div class="mj-toggle">
     <span>Forcer Artefact</span>
     <label class="toggle-switch">
