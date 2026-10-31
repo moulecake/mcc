@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="day">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ashnard – Wiki de Worldbuilding (Version 0.3)</title>
+<!-- 
+  @LLM-INSTRUCTIONS:
+  - Ce fichier est optimisé pour la lecture chirurgicale et l'économie de tokens.
+  - Pour toute recherche ou lecture : pour cibler l'information utilise les balises <!-- @SECTION-START: NOM --> 
+<!--
+  - Pour toute édition ou modification : NE RÉÉCRIS PAS l'intégralité du fichier. isole tes modifications entre <!-- @MODIF-START --> <!-- @MODIF-END -->
+<!--
+  - Pour toute nouvelle création créer, si besoin, les balises <!-- @SECTION-START: NOM -->  <!-- @SECTION-END -->
+
+<!-- .claude TODO: ajouter un scroll-spy sur le sommaire (surlignage de la section courante) -->
+<style>
+/* @SECTION: THEME_VARIABLES */
+:root{--bg:#fff;--bg2:#f8f9fa;--bg3:#eaecf0;--fg:#202122;--fg2:#54595d;--link:#0645ad;--link-h:#3366cc;--bd:#a2a9b1;--bd2:#c8ccd1;--ok:#d5fdf4;--ok-b:#14866d;--todo:#fef6e7;--todo-b:#fc3;--cosmo:#eaf3ff;--cosmo-b:#36c;--hdr:#f6f6f6}
+[data-theme=night]{color-scheme:dark;--bg:#101418;--bg2:#1b1f23;--bg3:#2a2f35;--fg:#eaecf0;--fg2:#a2a9b1;--link:#88a3e8;--link-h:#a9bff2;--bd:#54595d;--bd2:#3a3f45;--ok:#0c2a24;--ok-b:#2fbf9b;--todo:#2e2711;--todo-b:#c99a1c;--cosmo:#14223a;--cosmo-b:#6b8fe6;--hdr:#161a1e}
+/* @SECTION: BASE */
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.65 system-ui,-apple-system,"Segoe UI",sans-serif;transition:background .2s,color .2s}
+a{color:var(--link);text-decoration:none}a:hover{color:var(--link-h);text-decoration:underline}
+#topbar{display:flex;justify-content:space-between;align-items:center;padding:8px 20px;background:var(--hdr);border-bottom:1px solid var(--bd2);position:sticky;top:0;z-index:5}
+.logo{font:700 1.1em Georgia,"Linux Libertine",serif}.logo span{color:var(--fg2);font-weight:400;font-size:.8em}
+#themeBtn{background:var(--bg3);color:var(--fg);border:1px solid var(--bd);border-radius:14px;padding:2px 12px;font-size:.8em;cursor:pointer;opacity:.85}
+#themeBtn:hover{opacity:1}
+#contenu{max-width:1040px;margin:0 auto;padding:10px 24px 40px}
+/* @SECTION: TITRES_ET_TEXTE */
+h1,h2,h3,h4{font-family:Georgia,"Linux Libertine","Times New Roman",serif;font-weight:400;line-height:1.25;scroll-margin-top:60px}
+h1{font-size:2em;border-bottom:1px solid var(--bd);margin:.3em 0 .4em}
+h2{font-size:1.55em;border-bottom:1px solid var(--bd);margin:1.2em 0 .6em;padding-bottom:.15em}
+h3{font-size:1.25em;font-weight:700;margin:1.2em 0 .4em}h4{font-size:1.05em;font-weight:700;margin:1em 0 .3em}
+hr{border:0;border-top:1px solid var(--bd2)}
+/* @SECTION: ONGLETS_WIKIPEDIA */
+.wtabs{display:flex;justify-content:flex-end;gap:2px;margin:1.4em 0 -.9em;font-size:.78em;border-bottom:1px solid var(--bd2)}
+.wtabs a{padding:3px 10px;background:linear-gradient(var(--bg),var(--bg2));border:1px solid var(--bd2);border-bottom:0;margin-bottom:-1px}
+.wtabs a.on{background:var(--bg);color:var(--fg);font-weight:700;border-color:var(--bd)}
+.wtabs.page{margin:.4em 0 .6em}
+/* @SECTION: SOMMAIRE */
+.toc{display:inline-block;min-width:260px;background:var(--bg2);border:1px solid var(--bd);padding:8px 16px;margin:.8em 0 1.2em;font-size:.92em}
+.toc>div{text-align:center;font-weight:700}.toc>div button{background:none;border:0;color:var(--link);cursor:pointer;font-size:.9em}
+.toc ul{margin:.3em 0;padding-left:1.4em;list-style:none}.toc ul ul{padding-left:1.2em}.toc.hide>ul{display:none}
+/* @SECTION: INFOBOX */
+.infobox{float:right;clear:right;width:290px;margin:.4em 0 1em 1.4em;background:var(--bg2);border:1px solid var(--bd);font-size:.88em}
+.ib-title{background:var(--bg3);text-align:center;font-weight:700;padding:6px;font-size:1.1em}
+.infobox table{border:0;margin:0}.infobox th,.infobox td{border:0;border-top:1px solid var(--bd2);padding:4px 8px;vertical-align:top}
+.infobox th{width:38%;background:transparent;text-align:left}
+/* @SECTION: TABLEAUX_ET_BOITES */
+table{border-collapse:collapse;width:100%;margin:1em 0}
+th,td{border:1px solid var(--bd);padding:6px 10px;text-align:left;vertical-align:top}th{background:var(--bg3)}
+.box,.cosmo,.inspiration{border:1px solid var(--bd2);background:var(--bg2);padding:10px 16px;margin:1em 0;overflow:hidden}
+.cosmo{background:var(--cosmo);border-color:var(--cosmo-b)}
+.todo,.confirmed{padding:8px 14px;margin:1em 0;border:1px solid var(--bd2);border-left:10px solid;font-size:.93em;clear:both}
+.todo{background:var(--todo);border-left-color:var(--todo-b)}.confirmed{background:var(--ok);border-left-color:var(--ok-b)}
+tr:target td,p:target,h3:target,h4:target{background:var(--todo)}
+/* @SECTION: DIALOGUE_EDITION */
+dialog{background:var(--bg);color:var(--fg);border:1px solid var(--bd);border-radius:4px;width:min(760px,92vw);padding:16px}
+dialog::backdrop{background:#0008}dialog textarea{width:100%;height:320px;background:var(--bg2);color:var(--fg);border:1px solid var(--bd);font:13px/1.5 ui-monospace,Consolas,monospace;padding:8px}
+dialog button{padding:4px 14px;margin:8px 6px 0 0;cursor:pointer}dialog ul{padding-left:1.2em}
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 18px;border-radius:4px;display:none;z-index:9}
+footer{margin-top:3em;border-top:1px solid var(--bd2);padding-top:1em;font-size:.85em;color:var(--fg2);clear:both}
+@media(max-width:720px){.infobox{float:none;width:100%;margin:1em 0}#contenu{padding:6px 14px}}
+</style>
+</head>
+<body>
+<!-- @SECTION-START: HEADER -->
+<header id="topbar"><div class="logo">Ashnard <span>Le wiki de worldbuilding</span></div><button id="themeBtn" type="button" title="Basculer jour / nuit">🌙 Nuit</button></header>
+<!-- @SECTION-END -->
+
+<main id="contenu">
+<!-- @SECTION-START: INTRO -->
+<nav class="wtabs page" data-page="1"></nav>
+<h1 id="ashnard">Ashnard</h1>
+<aside class="infobox"><div class="ib-title">Ashnard</div><table><tr><th>Genre</th><td>Heroic fantasy (base D&amp;D)</td></tr><tr><th>Version</th><td>0.2 (travail)</td></tr><tr><th>Monde jouable</th><td><a href="#cosmo_umbriel">Umbriel 2.0</a></td></tr><tr><th>Planète mère</th><td><a href="#cosmo_uranus">Uranus 2.0</a></td></tr><tr><th>Étoile</th><td><a href="#cosmo_etoile">Naine Bleue</a></td></tr><tr><th>Superficie</th><td>≈ 12,9 M km²</td></tr><tr><th>Continent</th><td>≈ 3,9 M km² (taille Europe)</td></tr><tr><th>Méga-océan</th><td>≈ 70 % de la surface</td></tr><tr><th>Jour</th><td>30 heures</td></tr><tr><th>Année</th><td>300 jours (10 mois)</td></tr><tr><th>Lunes</th><td><a href="#cosmo_lunes">Titania, Obéron, Puck, Miranda, Ariel</a></td></tr><tr><th>Pouvoir</th><td>Fragmenté (type Faerûn)</td></tr></table></aside>
+
+<p><em>Monde de heroic fantasy – base D&D – Version de travail 0.2</em><br>
+Dernière mise à jour : intégration cosmologie, calendrier, elfes d’Obéron, Ukurm & orcs.</p>
+<!-- @SECTION-END -->
+
+<!-- @SECTION-START: SOMMAIRE -->
+<nav class="toc" id="toc"><div>Sommaire <button type="button" id="tocBtn">[masquer]</button></div><ul><li><a href="#cosmo_systeme">1. Cosmologie &amp; Système stellaire</a></li><li><a href="#monde_calendrier">2. Temps &amp; Calendrier</a></li><li><a href="#monde_vue_ensemble">3. Vue d’ensemble du monde</a></li><li><a href="#monde_geographie">4. Géographie physique</a></li><li><a href="#monde_politique">5. Structure politique globale</a></li><li><a href="#peuples">6. Peuples majeurs</a><ul><li><a href="#peuple_elfes_oberon">Elfes d’Obéron</a></li><li><a href="#peuple_nains">Nains – Royaume des Halls Profonds (nom provisoire)</a></li><li><a href="#peuple_sekhmira">Sekhmira</a></li><li><a href="#peuple_orcs">Orcs &amp; Semi-orcs</a></li></ul></li><li><a href="#lieux">7. Lieux clés</a><ul><li><a href="#lieu_waterdeep">Waterdeep</a></li><li><a href="#lieu_vivec">Vivec</a></li><li><a href="#lieu_seyda_neen">Seyda Neen</a></li><li><a href="#lieu_porto_libre">Porto-Libre</a></li><li><a href="#lieu_capitale_historique">Capitale historique (Ouest du continent Waterdeep)</a></li><li><a href="#lieu_ukurm">Ukurm</a></li><li><a href="#lieu_dragon_ur">Dragon’Ur &amp; Zone Brûlée</a></li></ul></li><li><a href="#monde_routes">8. Routes commerciales majeures</a></li><li><a href="#meta_points_ouverts">9. Points encore ouverts</a></li><li><a href="#meta_inspirations">10. Inspirations</a></li></ul></nav>
+<!-- @SECTION-END -->
+
+<!-- @SECTION-START: COSMOLOGIE -->
+<section class="wsec" data-sec="COSMOLOGIE">
+<nav class="wtabs"></nav>
+<h2 id="cosmo_systeme">1. Cosmologie &amp; Système stellaire</h2>
+
+<div class="cosmo">
+  <h3 id="cosmo_etoile">L’Étoile</h3>
+  <p>Une <strong>Naine Bleue</strong> : astre compact, hyper chaud et brillant. Lumière native blanche saturée en ultraviolets.</p>
+
+  <h3 id="cosmo_uranus">La Planète Mère – Uranus 2.0</h3>
+  <ul>
+    <li>Située dans la zone habitable.</li>
+    <li>Inclinaison extrême (~98°) : elle « roule » sur le côté.</li>
+    <li>Superficie ≈ 8,1 milliards de km² (~16× la Terre).</li>
+    <li>Un seul cyclone géant et permanent au nord.</li>
+    <li>Trône immobile dans le ciel du continent d’<a href="#cosmo_umbriel">Umbriel</a>.</li>
+  </ul>
+
+  <h3 id="cosmo_umbriel">Umbriel 2.0 – Le monde jouable (Ashnard)</h3>
+  <ul>
+    <li>Superficie triplée ≈ 12,9 millions de km².</li>
+    <li><strong>Continent unique</strong> (≈ 30 % de la surface) ≈ 3,9 millions de km² (taille Europe) sur la face tournée vers <a href="#cosmo_uranus">Uranus</a>.</li>
+    <li><strong>Méga-océan</strong> (≈ 70 %) sur la face cachée.</li>
+    <li>Atmosphère épaisse + couche d’ozone ultra-dense → ciel bleu azur, lumière blanche pure au sol, végétation verte et luxuriante.</li>
+    <li>Nuits continentales jamais totalement noires : Uranus agit comme un gigantesque miroir fixe qui baigne le monde d’une douce clarté bleutée.</li>
+  </ul>
+
+  <h3 id="cosmo_lunes">Les Lunes sœurs</h3>
+  <table>
+    <tr><th>Lune</th><th>Cycle</th><th>Rôle / Particularité</th></tr>
+    <tr><td><strong>Titania</strong></td><td>2,1 jours</td><td>Visible, lumières artificielles détectables → <strong>Mystère public</strong> (potentiellement Eberron-like). Tout le monde sait qu’« il y a quelque chose ».</td></tr>
+    <tr><td><strong>Obéron</strong></td><td>3,2 jours</td><td>Repère de navigation. Civilisation elfique secrète (<a href="#peuple_elfes_oberon">lumière froide</a> + face cachée majoritaire).</td></tr>
+    <tr><td><strong>Puck</strong></td><td>6 heures (0,2 j)</td><td>Mémetronome du ciel. 5 tours par jour. Unité de garde (« une Puck »).</td></tr>
+    <tr><td><strong>Miranda</strong></td><td>10 heures (0,3 j)</td><td>Divise la journée de 30 h en 3 tiers (Travail / Vie / Sommeil).</td></tr>
+    <tr><td><strong>Ariel</strong></td><td>18 heures (0,6 j)</td><td>La vagabonde. Son zénith se décale de 12 h chaque jour.</td></tr>
+  </table>
+</div>
+
+<div class="confirmed">
+  <strong>Confirmé :</strong> Titania = mystère public visible. Obéron = secret elfique (lumière froide + face cachée). Les tailles ×3 sont conservées.
+</div>
+</section>
+<!-- @SECTION-END -->
+
+<!-- @SECTION-START: CALENDRIER -->
+<section class="wsec" data-sec="CALENDRIER">
+<nav class="wtabs"></nav>
+<h2 id="monde_calendrier">2. Temps &amp; Calendrier</h2>
+
+<div class="box">
+  <ul>
+    <li><strong>Jour</strong> : 30 heures (midi pile à 15 h, minuit pile à 30 h).</li>
+    <li><strong>Année</strong> : 300 jours.</li>
+    <li><strong>Structure</strong> : 10 mois de 30 jours, chacun divisé en 3 décades (semaines de 10 jours).</li>
+  </ul>
+
+  <h4 id="cal_saisons">Saisons &amp; Mois</h4>
+  <table>
+    <tr><th>Saison</th><th>Mois</th><th>Nom</th></tr>
+    <tr><td rowspan="2">🌸 Printemps – Grand Dégel</td><td>M1</td><td>Perce-Glace</td></tr>
+    <tr><td>M2</td><td>Bourgeons</td></tr>
+    <tr><td rowspan="3">☀️ Été – Jours Flamboyants</td><td>M3</td><td>Haut-Soleil</td></tr>
+    <tr><td>M4</td><td>Canicule</td></tr>
+    <tr><td>M5</td><td>Moissons</td></tr>
+    <tr><td rowspan="2">🍂 Automne – Récoltes Dorées</td><td>M6</td><td>Brumes</td></tr>
+    <tr><td>M7</td><td>Vendanges</td></tr>
+    <tr><td rowspan="3">❄️ Hiver – Grand Frimas</td><td>M8</td><td>1ères Neiges</td></tr>
+    <tr><td>M9</td><td>Gel Éternel</td></tr>
+    <tr><td>M10</td><td>Longue Nuit</td></tr>
+  </table>
+
+  <h4 id="cal_eclipses">Saison des Éclipses</h4>
+  <p>Uniquement au Printemps (M1-M2) et à l’Automne (M6-M7).  
+  Progression : <a href="#cal_eclipses">éclipses</a> partielles → pic total (halo électrique bleu/violet autour d’<a href="#cosmo_uranus">Uranus</a>) → fin.  
+  En été et hiver, le Soleil ne rencontre jamais Uranus.</p>
+</div>
+
+<div class="confirmed">
+  <strong>Confirmé :</strong> Calendrier officiel validé. Fichier de référence : <code>calendier_reference.html</code> et <code>Système et calendrier.md</code>.
+</div>
+</section>
+<!-- @SECTION-END -->
+
+<!-- @SECTION-START: VUE_ENSEMBLE -->
+<section class="wsec" data-sec="VUE_ENSEMBLE">
+<nav class="wtabs"></nav>
+<h2 id="monde_vue_ensemble">3. Vue d’ensemble du monde</h2>
+
+<p>Ashnard (<a href="#cosmo_umbriel">Umbriel</a> 2.0) est un monde de taille approximative <strong>Europe + Moyen-Orient + Afrique du Nord</strong>.  
+Continents, archipels, mers intérieures et barrières montagneuses créent des interdépendances économiques et politiques réalistes.</p>
+
+<p>Les climats suivent une logique planétaire (pôles / hémisphères / équateur).  
+Aucun empereur ni roi unique. Pouvoir fragmenté (modèle proche de Faerûn).</p>
+</section>
+<!-- @SECTION-END -->
+
+<!-- @SECTION-START: GEOGRAPHIE -->
+<section class="wsec" data-sec="GEOGRAPHIE">
+<nav class="wtabs"></nav>
+<h2 id="monde_geographie">4. Géographie physique</h2>
+
+<h3 id="geo_continents">Continents &amp; Zones majeures (Ouest → Est)</h3>
+
+<table>
+  <tr>
+    <th>Nom (provisoire)</th>
+    <th>Position</th>
+    <th>Caractéristiques</th>
+    <th>Peuples / notes</th>
+  </tr>
+  <tr id="geo_ameriques">
+    <td>« <a href="#geo_ameriques">Amériques</a> »</td>
+    <td>Extrême Ouest (océan)</td>
+    <td>Archipels, zone ultra-sauvage possible (faune primitive / dinosaures)</td>
+    <td>À développer</td>
+  </tr>
+  <tr id="geo_continent_waterdeep">
+    <td><a href="#geo_continent_waterdeep">Continent Waterdeep</a> (« Europe »)</td>
+    <td>Centre</td>
+    <td>Plaines, forêts, mer intérieure, cordillère ouest type Andes</td>
+    <td><a href="#lieu_waterdeep">Waterdeep</a>, villages agricoles, <a href="#lieu_porto_libre">Porto-Libre</a>, <a href="#peuple_nains">nains</a>, <a href="#lieu_capitale_historique">capitale historique</a> à l’ouest</td>
+  </tr>
+  <tr id="geo_northrend">
+    <td><a href="#geo_northrend">Northrend</a></td>
+    <td>Extrême Nord</td>
+    <td>Froid polaire / subarctique, hostile</td>
+    <td>À développer</td>
+  </tr>
+  <tr id="geo_mora">
+    <td><a href="#geo_mora">Mora</a></td>
+    <td>Est de la barrière</td>
+    <td>Côte nord, plaines et forêts</td>
+    <td><a href="#lieu_vivec">Vivec</a>, <a href="#lieu_seyda_neen">Seyda Neen</a></td>
+  </tr>
+  <tr id="geo_sekhmira">
+    <td><a href="#peuple_sekhmira">Sekhmira</a></td>
+    <td>Sud</td>
+    <td>Désert dominant, forêt à l’extrême sud</td>
+    <td>Sekhmira (Tabaxi), Ramkashar, <a href="#concept_cristaux_eoliens">cristaux éoliens</a></td>
+  </tr>
+  <tr>
+    <td><a href="#lieu_ukurm">Ukurm</a></td>
+    <td>Est, séparé de Sekhmira par un bras de mer</td>
+    <td>Aride / steppe, extension désertique au milieu, forme type péninsule arabique, taille ≈ continent Waterdeep sans mer intérieure. Chaîne de montagnes sur son flanc est (continuation de la barrière mondiale jusqu’au pôle sud)</td>
+    <td><a href="#peuple_orcs">Orcs</a> / semi-orcs (colonie dans le seul col praticable), pas de contrôle total du territoire</td>
+  </tr>
+  <tr id="geo_deshaan">
+    <td><a href="#geo_deshaan">Deshaan</a></td>
+    <td>Sud de Mora / est de Sekhmira</td>
+    <td>À définir</td>
+    <td>—</td>
+  </tr>
+</table>
+
+<p id="geo_barriere"><strong><a href="#geo_barriere">Barrière montagneuse mondiale</a></strong> : part de Mora/Vivec et descend jusqu’au pôle sud. Coupe le monde en deux et force les flux commerciaux. Sur Ukurm elle se trouve sur le flanc est.</p>
+
+<!-- TODO: À développer : Largeur exacte des bras de mer, navigabilité précise, détails de la mer intérieure, nature exacte des « Amériques », contenu de Deshaan et Northrend. -->
+<div class="todo">
+  <strong>À développer :</strong> Largeur exacte des bras de mer, navigabilité précise, détails de la mer intérieure, nature exacte des « Amériques », contenu de Deshaan et Northrend.
+</div>
+</section>
+<!-- @SECTION-END -->
+
+<!-- @SECTION-START: POLITIQUE -->
+<section class="wsec" data-sec="POLITIQUE">
+<nav class="wtabs"></nav>
+<h2 id="monde_politique">5. Structure politique globale</h2>
+
+<p>Aucune autorité continentale unique.  
+Multitude de royaumes indépendants, cités-États, républiques, principautés et zones sauvages.</p>
+
+<p id="pol_conseil">Un <strong><a href="#pol_conseil">Conseil des Puissances</a></strong> (informel ou ponctuel) peut se réunir à <a href="#lieu_waterdeep">Waterdeep</a> ou <a href="#lieu_porto_libre">Porto-Libre</a> en cas d’intérêts convergents (menace majeure, guerre commerciale, fléau…), sans pouvoir coercitif permanent.</p>
+</section>
+<!-- @SECTION-END -->
+
+<!-- @SECTION-START: PEUPLES -->
+<section class="wsec" data-sec="PEUPLES">
+<nav class="wtabs"></nav>
+<h2 id="peuples">6. Peuples majeurs</h2>
+<!-- @SECTION-START: PEUPLE_ELFES -->
+<section class="wsub">
+<h3 id="peuple_elfes_oberon">Elfes d’Obéron</h3>
+<aside class="infobox"><div class="ib-title">Elfes d’Obéron</div><table><tr><th>Origine</th><td>Lune <a href="#cosmo_lunes">Obéron</a></td></tr><tr><th>Voyage</th><td>Portails</td></tr><tr><th>Habitat</th><td>Face cachée (majorité)</td></tr><tr><th>Culture</th><td>Lumière froide</td></tr><tr><th>Statut</th><td>Secret de haut niveau</td></tr></table></aside>
+
+<div class="box">
+  <p><strong>Origine :</strong> Civilisation native d’<a href="#cosmo_lunes">Obéron</a> (lune).</p>
+  <p><strong>Magie de voyage :</strong> Portails (pas de vaisseaux).</p>
+  <p><strong>Secret :</strong> Leur existence sur Obéron est un secret de très haut niveau.  
+  Culture de la <strong>lumière froide</strong> : lumières magiques qui ne rayonnent quasiment pas vers l’extérieur. Considérer les lumières qui fuient vers le ciel comme une faute grave (pollution cosmique / signal aux prédateurs du vide).</p>
+  <p><strong>Installation :</strong> Majorité de la population et grandes cités sur la face cachée d’Obéron. Face visible : réserves, monastères, tours d’observation ultra-discrètes.</p>
+  <p><strong>Sur <a href="#cosmo_umbriel">Umbriel</a> :</strong> Agents et familles infiltrés depuis longtemps.  
+  Lignées pures continuent d’avoir des enfants entre elfes.  
+  Métissage toléré (mais pas le modèle dominant) pour se fondre dans les populations locales. Connu seulement des plus hautes instances.</p>
+  <p><strong>Lune d’origine :</strong> Habitable et visitable plus tard dans la campagne (ou seconde campagne), potentiellement style Eberron sur certains aspects, mais avec la contrainte de la lumière froide.</p>
+</div>
+<div class="confirmed">
+  <strong>Confirmé :</strong> Version face cachée + lumière froide + portails rares + métissage toléré.
+</div>
+</section>
+<!-- @SECTION-END -->
+<!-- @SECTION-START: PEUPLE_NAINS -->
+<section class="wsub">
+<h3 id="peuple_nains">Nains – Royaume des Halls Profonds (nom provisoire)</h3>
+<div class="box">
+  <p>Puissance à part entière, handicapée depuis le passage de <a href="#lieu_dragon_ur">Dragon’Ur</a>.</p>
+  <ul>
+    <li>Commerce large impossible. Uniquement petits volumes de haute valeur ou échanges de ressources naines (métaux, gemmes, artisanat) contre biens de surface.</li>
+    <li>Enclave ouverte côté Europe (bras d’eau) : étrangers acceptés uniquement comme <strong>locataires</strong> (jamais propriétaires, même sur générations). Juridiction naine stricte.</li>
+    <li>Vastes portions des anciennes cités et routes abandonnées et infestées (gobelins, kobolds, monstruosités). Accès possibles vers l’Outreterre.</li>
+  </ul>
+</div>
+</section>
+<!-- @SECTION-END -->
+<!-- @SECTION-START: PEUPLE_SEKHMIRA -->
+<section class="wsub">
+<h3 id="peuple_sekhmira">Sekhmira</h3>
+<aside class="infobox"><div class="ib-title">Sekhmira</div><table><tr><th>Peuple</th><td>Tabaxi « primordiaux »</td></tr><tr><th>Culture</th><td>Égyptienne</td></tr><tr><th>Dirigeants</th><td>Reines, reine des reines</td></tr><tr><th>Commerce</th><td>Caravanes uniquement</td></tr><tr><th>Monopole</th><td><a href="#concept_cristaux_eoliens">Cristaux éoliens</a></td></tr></table></aside>
+
+<div class="box">
+  <p>Tabaxi « primordiaux » à culture égyptienne. Dirigés par des reines et une reine des reines (élue de leur déesse).</p>
+  <p><strong>Commerce extérieur :</strong> Uniquement caravanes. Aucune navigation en haute mer.  
+  Monopole absolu des <strong id="concept_cristaux_eoliens"><a href="#concept_cristaux_eoliens">cristaux éoliens</a></strong> (emmagasinent énergie magique et/ou diffusent de l’air ; s’épuisent → rachetés et rapportés pour recharge). Tous types de tailles et durées. Pilier de leur économie externe.</p>
+  <p>Lore interne de Ramkashar déjà existant (à intégrer plus tard).</p>
+</div>
+</section>
+<!-- @SECTION-END -->
+<!-- @SECTION-START: PEUPLE_ORCS -->
+<section class="wsub">
+<h3 id="peuple_orcs">Orcs &amp; Semi-orcs</h3>
+<div class="box">
+  <p>Style « Horde de WoW » un peu civilisée (à préciser).</p>
+  <p><strong>Colonie stratégique :</strong> Installée dans le seul col montagneux praticable reliant le <a href="#geo_continent_waterdeep">continent Waterdeep</a> à <a href="#lieu_ukurm">Ukurm</a>.  
+  Position de contrôle / taxation du passage terrestre le plus direct.</p>
+  <p>Ils n’ont pas la mainmise sur tout Ukurm (territoire trop vaste).</p>
+</div>
+<!-- TODO: À développer : Niveau exact de civilisation, structure politique (confédération tribale ? cité-forteresse ?), ressources économiques du col, relations avec nains et Sekhmira. -->
+<div class="todo">
+  <strong>À développer :</strong> Niveau exact de civilisation, structure politique (confédération tribale ? cité-forteresse ?), ressources économiques du col, relations avec <a href="#peuple_nains">nains</a> et <a href="#peuple_sekhmira">Sekhmira</a>.
+</div>
+</section>
+<!-- @SECTION-END -->
+</section>
+<!-- @SECTION-END -->
+
+<!-- @SECTION-START: LIEUX -->
+<section class="wsec" data-sec="LIEUX">
+<nav class="wtabs"></nav>
+<h2 id="lieux">7. Lieux clés</h2>
+<!-- @SECTION-START: LIEU_WATERDEEP -->
+<section class="wsub">
+<h3 id="lieu_waterdeep">Waterdeep</h3>
+<aside class="infobox"><div class="ib-title">Waterdeep</div><table><tr><th>Statut</th><td>Cité-État indépendante</td></tr><tr><th>Modèle</th><td>« Suisse économique »</td></tr><tr><th>Localisation</th><td>Embouchure du bras d’eau de la mer intérieure</td></tr><tr><th>Architecture</th><td>Pierre de taille</td></tr><tr><th>Économie</th><td>Commerce, finance, stockage, redistribution</td></tr><tr><th>Ambition</th><td>Aucune expansion territoriale</td></tr></table></aside>
+
+<div class="box">
+  <p><strong>Statut :</strong> Cité-État indépendante ultra-riche (modèle « Suisse économique »). Pourrait égaler à elle seule la richesse d’un royaume entier.</p>
+  <p><strong>Localisation :</strong> Embouchure du bras d’eau provenant de la mer intérieure.</p>
+  <p><strong>Architecture :</strong> Quasi entièrement en pierre de taille (style haussmannien médiéval). Très peu de bois apparent aux étages.</p>
+  <p><strong>Économie :</strong> Commerce, finance, stockage, redistribution. Nourrie par les plaines agricoles environnantes (villages autonomes qui vendent le surplus ; taxe de location pour les plus proches, simple achat pour les plus éloignés), forêts et carrières de pierre de l’autre côté de l’embouchure. Une ville-carrefour sert de point de transit.</p>
+  <p><strong>Politique :</strong> Aucune ambition expansionniste territoriale. Influence purement économique.</p>
+</div>
+</section>
+<!-- @SECTION-END -->
+<!-- @SECTION-START: LIEU_VIVEC -->
+<section class="wsub">
+<h3 id="lieu_vivec">Vivec</h3>
+<aside class="infobox"><div class="ib-title">Vivec</div><table><tr><th>Statut</th><td>Ville portuaire</td></tr><tr><th>Population</th><td>≈ 10 000 – 15 000</td></tr><tr><th>Localisation</th><td>Côte nord de <a href="#geo_mora">Mora</a></td></tr><tr><th>Gouvernance</th><td>Capitainerie + Bourgmestre</td></tr><tr><th>Voisin</th><td><a href="#lieu_seyda_neen">Seyda Neen</a> (bois)</td></tr></table></aside>
+
+<div class="box">
+  <p><strong>Statut :</strong> Ville portuaire importante (≈ 10 000 – 15 000 habitants).</p>
+  <p><strong>Localisation :</strong> Côte nord de <a href="#geo_mora">Mora</a>, extrémité nord de la <a href="#geo_barriere">barrière montagneuse</a>. Légèrement plus au nord que <a href="#lieu_waterdeep">Waterdeep</a>.</p>
+  <p><strong>Gouvernance :</strong> Capitainerie (port, transit, navires, droits de quai, sécurité maritime) + Bourgmestre (gestion civile).</p>
+  <p><strong>Population :</strong> Principalement des colons et marchands venus de Waterdeep et de la région de <a href="#lieu_seyda_neen">Seyda Neen</a> qui ont sécurisé et développé le site.</p>
+  <p><strong>Rôle :</strong> Porte d’entrée maritime du nord-est. Bénéficie de la protection des <a href="#lieu_dragon_ur">dragons bleus</a> sur la route Waterdeep ↔ Vivec (l’une des plus sûres du continent).</p>
+</div>
+</section>
+<!-- @SECTION-END -->
+<!-- @SECTION-START: LIEU_SEYDA_NEEN -->
+<section class="wsub">
+<h3 id="lieu_seyda_neen">Seyda Neen</h3>
+<div class="box">
+  <p>Village-port plus à l’est sur la même côte que <a href="#lieu_vivec">Vivec</a>. Spécialisé dans l’exploitation et l’expédition du bois vers Vivec. Économiquement dépendant.</p>
+</div>
+</section>
+<!-- @SECTION-END -->
+<!-- @SECTION-START: LIEU_PORTO_LIBRE -->
+<section class="wsub">
+<h3 id="lieu_porto_libre">Porto-Libre</h3>
+<div class="box">
+  <p><strong>Prononciation :</strong> « Porto-libré » (à la brésilienne).</p>
+  <p>Petite île accolée à la grande île centrale (sauvage, escarpée, « maudite par des esprits anciens ») de la mer intérieure.</p>
+  <p>Cœur terrestre réduit + extensions massives sur pilotis, pontons, navires-entrepôts et navires-établissements ancrés en permanence. Zone franche neutre, ambiance bourse + port franc régulé.</p>
+</div>
+</section>
+<!-- @SECTION-END -->
+<!-- @SECTION-START: LIEU_CAPITALE_HISTORIQUE -->
+<section class="wsub">
+<h3 id="lieu_capitale_historique">Capitale historique (Ouest du continent Waterdeep)</h3>
+<div class="box">
+  <p>Située tout à l’ouest, collée à la cordillère ouest (côté terre).</p>
+  <p><strong>Statut actuel :</strong> En discussion.  
+  Piste forte : ancien siège d’un royaume/empire qui contrôlait autrefois une bonne partie des plaines. A perdu de son pouvoir économique au profit de <a href="#lieu_waterdeep">Waterdeep</a>, mais conserve prestige, titres nobiliaires, archives et éventuellement une armée traditionnelle. Rivalité froide (tradition vs modernité / argent).</p>
+</div>
+<!-- TODO: À développer : Nom, statut politique exact, raisons historiques de son emplacement, relation précise avec Waterdeep. -->
+<div class="todo">
+  <strong>À développer :</strong> Nom, statut politique exact, raisons historiques de son emplacement, relation précise avec Waterdeep.
+</div>
+</section>
+<!-- @SECTION-END -->
+<!-- @SECTION-START: LIEU_UKURM -->
+<section class="wsub">
+<h3 id="lieu_ukurm">Ukurm</h3>
+<aside class="infobox"><div class="ib-title">Ukurm</div><table><tr><th>Type</th><td>Continent</td></tr><tr><th>Position</th><td>Est, au-delà d’un bras de mer</td></tr><tr><th>Climat</th><td>Aride / steppe</td></tr><tr><th>Forme</th><td>Péninsule arabique</td></tr><tr><th>Peuples</th><td><a href="#peuple_orcs">Orcs / semi-orcs</a> (col)</td></tr></table></aside>
+
+<div class="box">
+  <p>Continent à l’est, séparé de <a href="#peuple_sekhmira">Sekhmira</a> par un bras de mer.  
+  Aride / steppe, avec une extension du même désert au milieu (sans population Sekhmira).  
+  Forme géographique rappelant la péninsule arabique.  
+  Taille approximative du <a href="#geo_continent_waterdeep">continent Waterdeep</a> sans sa mer intérieure.  
+  Chaîne de montagnes sur son flanc est (continuation de la barrière mondiale).</p>
+  <p>Colonie <a href="#peuple_orcs">orc</a>/semi-orc dans le seul col praticable vers le continent <a href="#lieu_waterdeep">Waterdeep</a>.  
+  Le reste du territoire n’est pas sous contrôle orc unique.</p>
+</div>
+<!-- TODO: À développer : Autres peuples, ressources, cités éventuelles, relation exacte avec le col orc. -->
+<div class="todo">
+  <strong>À développer :</strong> Autres peuples, ressources, cités éventuelles, relation exacte avec le col orc.
+</div>
+</section>
+<!-- @SECTION-END -->
+<!-- @SECTION-START: LIEU_DRAGON_UR -->
+<section class="wsub">
+<h3 id="lieu_dragon_ur">Dragon’Ur &amp; Zone Brûlée</h3>
+<div class="box">
+  <p>Dragon vivant, reste sur son île montagneuse au sud.  
+  Zone brûlée (et magiquement résiduelle) s’étend de la sortie des mines naines (côté <a href="#geo_mora">Mora</a>/<a href="#lieu_vivec">Vivec</a>) jusqu’à son île. Cicatrice permanente, dangereuse, peu peuplée.</p>
+  <p>Dragons bleus du nord : protègent la route maritime <a href="#lieu_waterdeep">Waterdeep</a> ↔ Vivec (fait acté).</p>
+</div>
+<!-- TODO: À développer : Nature exacte de Dragon’Ur, cause de l’incendie, motivation des dragons bleus. -->
+<div class="todo">
+  <strong>À développer :</strong> Nature exacte de Dragon’Ur, cause de l’incendie, motivation des dragons bleus.
+</div>
+</section>
+<!-- @SECTION-END -->
+</section>
+<!-- @SECTION-END -->
+
+<!-- @SECTION-START: ROUTES -->
+<section class="wsec" data-sec="ROUTES">
+<nav class="wtabs"></nav>
+<h2 id="monde_routes">8. Routes commerciales majeures</h2>
+
+<table>
+  <tr>
+    <th>Route</th>
+    <th>Trajet</th>
+    <th>Marchandises principales</th>
+    <th>Particularité</th>
+  </tr>
+  <tr>
+    <td>Route des <a href="#lieu_dragon_ur">Dragons Bleus</a></td>
+    <td><a href="#lieu_waterdeep">Waterdeep</a> ↔ <a href="#lieu_vivec">Vivec</a> (mer du nord)</td>
+    <td>Métaux, gemmes, artisanat <a href="#peuple_nains">nain</a> (petits volumes), luxe, informations</td>
+    <td>La plus sûre (dragons bleus)</td>
+  </tr>
+  <tr>
+    <td>Route de la Mer Intérieure</td>
+    <td>Waterdeep ↔ <a href="#lieu_porto_libre">Porto-Libre</a> ↔ cités côtières</td>
+    <td>Céréales, vin, bois, pierre, manufacturés, informations</td>
+    <td>Cœur économique du continent principal</td>
+  </tr>
+  <tr>
+    <td>Route des Caravanes <a href="#peuple_sekhmira">Sekhmira</a></td>
+    <td>Ramkashar → oasis → sud de l’Europe / intermédiaires</td>
+    <td>Épices, encens, pierres précieuses, <a href="#concept_cristaux_eoliens">cristaux éoliens</a>, savoirs, tissus</td>
+    <td>Uniquement terrestre / caravanes</td>
+  </tr>
+  <tr>
+    <td>Route souterraine restreinte</td>
+    <td>Comptoir nain ↔ Halls Profonds</td>
+    <td>Petits volumes de haute valeur</td>
+    <td>Très limitée post-Dragon’Ur</td>
+  </tr>
+  <tr>
+    <td>Route du Bois</td>
+    <td><a href="#lieu_seyda_neen">Seyda Neen</a> → Vivec</td>
+    <td>Bois de construction et chauffage</td>
+    <td>Locale et vitale pour Vivec</td>
+  </tr>
+  <tr>
+    <td>Col d’<a href="#lieu_ukurm">Ukurm</a></td>
+    <td><a href="#geo_continent_waterdeep">Continent Waterdeep</a> ↔ Ukurm</td>
+    <td>À définir (contrôle <a href="#peuple_orcs">orc</a>)</td>
+    <td>Seul passage terrestre praticable</td>
+  </tr>
+</table>
+</section>
+<!-- @SECTION-END -->
+
+<!-- @SECTION-START: POINTS_OUVERTS -->
+<section class="wsec" data-sec="POINTS_OUVERTS">
+<nav class="wtabs"></nav>
+<h2 id="meta_points_ouverts">9. Points encore ouverts</h2>
+
+<ul>
+  <li>Nom définitif des continents (sauf <a href="#peuple_sekhmira">Sekhmira</a>, <a href="#geo_mora">Mora</a>, <a href="#lieu_ukurm">Ukurm</a>, <a href="#geo_deshaan">Deshaan</a> déjà nommés).</li>
+  <li><a href="#lieu_capitale_historique">Capitale historique</a> de l’ouest : nom, statut exact, histoire, relation avec <a href="#lieu_waterdeep">Waterdeep</a>.</li>
+  <li>Détails des <a href="#peuple_orcs">orcs</a> (civilisation, politique, économie du col).</li>
+  <li>Contenu de Deshaan, <a href="#geo_northrend">Northrend</a> et des « <a href="#geo_ameriques">Amériques</a> ».</li>
+  <li>Royaumes / duchés humains secondaires autour de Waterdeep et de la mer intérieure.</li>
+  <li>Autres races (halfelins, gnomes, etc.) et placement.</li>
+  <li>Niveau global de magie institutionnalisée (académies, etc.).</li>
+  <li>Intégration complète du lore de Ramkashar.</li>
+  <li>Motivation exacte des <a href="#lieu_dragon_ur">dragons bleus</a> et nature de Dragon’Ur.</li>
+</ul>
+</section>
+<!-- @SECTION-END -->
+
+<!-- @SECTION-START: INSPIRATIONS -->
+<section class="wsec" data-sec="INSPIRATIONS">
+<nav class="wtabs"></nav>
+<h2 id="meta_inspirations">10. Inspirations</h2>
+
+<div class="inspiration">
+  <ul>
+    <li><strong>Morrowind</strong> : <a href="#lieu_seyda_neen">Seyda Neen</a>, <a href="#lieu_vivec">Vivec</a>, régions marquées par d’anciennes catastrophes.</li>
+    <li><strong><a href="#lieu_waterdeep">Waterdeep</a> / Faerûn</strong> : Cité indépendante ultra-développée, structure politique fragmentée.</li>
+    <li><strong>Paris haussmannien</strong> : Architecture de pierre de Waterdeep.</li>
+    <li><strong>World of Warcraft – <a href="#geo_northrend">Northrend</a> &amp; Horde</strong> : Extrême nord + <a href="#peuple_orcs">orcs</a> civilisés.</li>
+    <li><strong>Cordillère des Andes</strong> : Barrières montagneuses.</li>
+    <li><strong>Égypte antique</strong> : Culture <a href="#peuple_sekhmira">Sekhmira</a> / Ramkashar.</li>
+    <li><strong>Suisse</strong> : Modèle économique de Waterdeep.</li>
+    <li><strong><a href="#cosmo_uranus">Uranus</a> &amp; ses lunes (<a href="#cosmo_lunes">Titania</a>, Obéron, etc.)</strong> : Base du système stellaire.</li>
+    <li><strong>Eberron</strong> : Inspiration possible pour Titania (mystère public) et aspects avancés d’Obéron.</li>
+    <li><strong>Draenei / voyage interstellaire</strong> : Idée initiale des <a href="#peuple_elfes_oberon">elfes</a> voyageurs (finalement portails).</li>
+  </ul>
+</div>
+</section>
+<!-- @SECTION-END -->
+
+
+<!-- @SECTION-START: FOOTER -->
+<footer>Page de travail – Ashnard Worldbuilding – Version 0.2, convertie en wiki monopage (v0.3).<br>Intègre : cosmologie Umbriel/Uranus, calendrier 30 h / 300 j, elfes d’Obéron, Ukurm &amp; orcs, mises à jour des lieux confirmés.</footer>
+<!-- @SECTION-END -->
+</main>
+
+<dialog id="dlg"><h3 id="dlgT" style="margin-top:0"></h3><div id="dlgB"></div><button id="dlgOk" type="button">Enregistrer (simulé)</button><button id="dlgNo" type="button">Fermer</button></dialog>
+<div id="toast"></div>
+
+<script>
+/* @SECTION: THEME_JOUR_NUIT */
+// Jour 08:00–16:59, nuit 17:00–07:59 (heure locale du navigateur ; = heure d'hiver de Paris pour un lecteur en France)
+const root = document.documentElement, btn = document.getElementById('themeBtn');
+let forced = null;
+const autoTheme = () => { const h = new Date().getHours(); return (h >= 8 && h < 17) ? 'day' : 'night'; };
+function applyTheme(t){ root.dataset.theme = t; btn.textContent = t === 'day' ? '🌙 Nuit' : '☀️ Jour'; }
+applyTheme(autoTheme());
+setInterval(() => { if (!forced) applyTheme(autoTheme()); }, 60000);
+btn.onclick = () => { forced = root.dataset.theme === 'day' ? 'night' : 'day'; applyTheme(forced); };
+
+/* @SECTION: SOMMAIRE_TOGGLE */
+tocBtn.onclick = () => { const h = toc.classList.toggle('hide'); tocBtn.textContent = h ? '[afficher]' : '[masquer]'; };
+
+/* @SECTION: ONGLETS_WIKIPEDIA */
+const TABS = [['lire','Lire'],['modifier','Modifier'],['code','Modifier le code'],['hist','Voir l’historique']];
+document.querySelectorAll('nav.wtabs').forEach(n => { n.innerHTML = TABS.map(([k,l],i) => `<a href="#" data-act="${k}"${i?'':' class="on"'}>${l}</a>`).join(''); });
+const toast = m => { const t = document.getElementById('toast'); t.textContent = m; t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 2600); };
+function wikitext(sec){
+  const c = sec.cloneNode(true); c.querySelectorAll('nav,.infobox').forEach(e => e.remove());
+  return [...c.querySelectorAll('h1,h2,h3,h4,p,li,tr')].map(e => {
+    const t = e.textContent.replace(/\s+/g,' ').trim(), n = e.tagName;
+    return n=='H1'?`= ${t} =`:n=='H2'?`== ${t} ==`:n=='H3'?`=== ${t} ===`:n=='H4'?`==== ${t} ====`:n=='LI'?`* ${t}`:n=='TR'?'| '+[...e.children].map(x=>x.textContent.trim()).join(' || '):t;
+  }).join('\n\n');
+}
+function sourceOf(sec){ const c = sec.cloneNode(true); c.querySelectorAll('nav').forEach(e => e.remove()); return c.innerHTML.trim(); }
+document.addEventListener('click', ev => {
+  const a = ev.target.closest('.wtabs a'); if (!a) return; ev.preventDefault();
+  const nav = a.parentElement, sec = nav.dataset.page ? document.getElementById('contenu') : nav.closest('section');
+  const title = nav.dataset.page ? 'Ashnard (page entière)' : (sec.querySelector('h2,h3')||{}).textContent;
+  nav.querySelectorAll('a').forEach(x => x.classList.toggle('on', x === a));
+  const act = a.dataset.act; if (act === 'lire') return;
+  const T = document.getElementById('dlgT'), B = document.getElementById('dlgB'), ok = document.getElementById('dlgOk');
+  ok.style.display = act === 'hist' ? 'none' : '';
+  if (act === 'hist') { T.textContent = 'Historique : ' + title;
+    B.innerHTML = '<ul><li><b>Version 0.3</b> (actuelle) – conversion en wiki monopage</li><li><b>Version 0.2</b> – intégration cosmologie, calendrier, elfes d’Obéron, Ukurm &amp; orcs</li></ul><small>Historique simulé : aucune base de données.</small>'; }
+  else { T.textContent = (act === 'code' ? 'Modifier le code : ' : 'Modifier : ') + title;
+    B.innerHTML = '<textarea id="ta" spellcheck="false"></textarea>'; document.getElementById('ta').value = act === 'code' ? sourceOf(sec) : wikitext(sec); }
+  document.getElementById('dlg').showModal();
+});
+dlgOk.onclick = () => { dlg.close(); toast('Modification simulée – rien n’a été enregistré.'); };
+dlgNo.onclick = () => dlg.close();
+</script>
+</body>
+</html>
