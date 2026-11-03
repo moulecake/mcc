@@ -1,0 +1,13 @@
+Projet Coffre des Arcanes
+- Auth Google Firebase activée (Google Auth + Cloud Firestore)
+- State global géré dans `script.js`
+- Sauvegarde/Synchronisation double : `localStorage` + Cloud Firestore (`players/{uid}`)
+- Fichier `data.js` : 464 objets magiques (NE PAS TOUCHER OU LIRE DÉLIBÉRÉMENT)
+- Nettoyage et optimisation de `script.js` effectués :
+  - Suppression de l'ancien bloc de sauvegarde obsolète.
+  - Sécurisation de `saveState()` et `loadState()` avec optionnel chaining sur les globales Firebase (`window.auth`).
+  - Harmonisation du gestionnaire `onAuthStateChanged` et des fonctions Cloud (`saveGameDataToCloud`, `loadGameDataFromCloud`) pour synchroniser directement l'objet `state` global avec Firestore.
+- Étapes de migration et d'authentification Google réalisées :
+  - Étape 1 : Refonte du bouton Google (Glassmorphism Bento Grid, logo SVG officiel en arrière-plan vectoriel, affichage du compte connecté et lien de déconnexion).
+  - Étape 2 : Automatisation du pseudo (suppression de l'input texte manuel, récupération automatique du `displayName` du compte Google et validation du bouton d'entrée).
+  - Étape 3 : Intégration de la fenêtre de synchronisation & fusion (modal de fusion localStorage/Cloud, import d'anciens codes AV1-…, et optimisation/nettoyage).

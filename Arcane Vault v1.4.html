@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Loot Box — Arcane Vault</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="data.js"></script>
+<style>
+:root {
+  --bg: #060810;
+  --surface: #0b0f1a;
+  --glass: rgba(13,17,28,0.7);
+  --border: rgba(255,255,255,0.07);
+  --c-c: #94a3b8;
+  --c-pc: #4ade80;
+  --c-r: #22d3ee;
+  --c-tr: #a855f7;
+  --c-l: #f97316;
+  --c-a: #e11d48;
+  --text: #e2e8f0;
+  --text-dim: #64748b;
+  --radius: 16px;
+  --t: 0.3s cubic-bezier(.4,0,.2,1);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Inter',sans-serif;
+  font-size:14px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  min-height:100vh;
+  overflow:hidden;
+}
+/* BG stars */
+body::before{
+  content:'';position:fixed;inset:0;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -20%,rgba(168,85,247,.12),transparent),
+    radial-gradient(ellipse 60% 40% at 80% 80%,rgba(34,211,238,.07),transparent);
+  pointer-events:none;z-index:0;
+}
+.stars{position:fixed;inset:0;pointer-events:none;z-index:0;}
+.star{position:absolute;border-radius:50%;background:#fff;animation:twinkle var(--d,3s) ease-in-out infinite var(--delay,0s);}
+@keyframes twinkle{0%,100%{opacity:.1;transform:scale(1)}50%{opacity:.7;transform:scale(1.3)}}
+
+/* LAYOUT */
+#app{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:24px;width:100%;max-width:520px;padding:20px;}
+/* HEADER */
+header{display:flex;align-items:center;justify-content:space-between;width:100%;padding:0 4px;}
+.logo{font-family:'Cinzel',serif;font-size:18px;font-weight:900;letter-spacing:2px;
+  background:linear-gradient(135deg,#a855f7,#22d3ee);-webkit-background-clip:text;-webkit-text-fill-color:transparent;cursor:pointer;user-select:none;}
+.header-right{display:flex;align-items:center;gap:10px;}
+.inv-btn{background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:8px 14px;
+  color:var(--text-dim);cursor:pointer;font-size:12px;letter-spacing:1px;font-family:'Inter',sans-serif;
+  display:flex;align-items:center;gap:6px;transition:var(--t);}
+.inv-btn:hover{color:var(--text);border-color:rgba(168,85,247,.4);background:rgba(168,85,247,.1);}
+
+/* KEYS PANEL */
+.keys-panel{
+  width:100%;background:var(--glass);border:1px solid var(--border);border-radius:var(--radius);
+  padding:16px 20px;backdrop-filter:blur(20px);display:flex;align-items:center;gap:16px;
+}
+.keys-icons{display:flex;gap:8px;}
+.key-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+  border:1px solid;transition:var(--t);}
+.key-icon.active{background:rgba(168,85,247,.15);border-color:rgba(168,85,247,.5);color:#a855f7;}
+.key-icon.inactive{background:rgba(255,255,255,.03);border-color:rgba(255,255,255,.07);color:var(--text-dim);}
+.keys-info{flex:1;}
+.keys-label{font-size:11px;color:var(--text-dim);letter-spacing:.5px;margin-bottom:4px;}
+.timer-bar-wrap{height:4px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden;}
+.timer-bar{height:100%;background:linear-gradient(90deg,#a855f7,#22d3ee);border-radius:99px;transition:width 1s linear;}
+.timer-text{font-size:11px;color:var(--text-dim);margin-top:4px;}
+
+/* CHEST AREA */
+.chest-area{position:relative;display:flex;flex-direction:column;align-items:center;gap:20px;width:100%;}
+.chest-wrap{position:relative;display:flex;align-items:center;justify-content:center;width:180px;height:180px;}
+.chest-glow{position:absolute;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(168,85,247,.25),transparent 70%);animation:breathe 3s ease-in-out infinite;pointer-events:none;}
+@keyframes breathe{0%,100%{transform:scale(.9);opacity:.6}50%{transform:scale(1.1);opacity:1}}
+#chest-svg{width:140px;height:140px;filter:drop-shadow(0 0 20px rgba(168,85,247,.4));cursor:pointer;transition:var(--t);}
+#chest-svg.shake{animation:shake 1.5s cubic-bezier(.36,.07,.19,.97) both;}
+@keyframes shake{
+  0%,100%{transform:translateX(0) rotate(0)}
+  10%{transform:translateX(-4px) rotate(-2deg)}
+  20%{transform:translateX(4px) rotate(2deg)}
+  30%{transform:translateX(-6px) rotate(-3deg)}
+  40%{transform:translateX(6px) rotate(3deg)}
+  50%{transform:translateX(-10px) rotate(-4deg)}
+  60%{transform:translateX(10px) rotate(4deg)}
+  70%{transform:translateX(-14px) rotate(-5deg)}
+  80%{transform:translateX(14px) rotate(5deg)}
+  90%{transform:translateX(-8px) rotate(-2deg)}
+}
+.open-btn{
+  padding:14px 36px;border-radius:12px;border:1px solid rgba(168,85,247,.5);
+  background:linear-gradient(135deg,rgba(168,85,247,.2),rgba(34,211,238,.1));
+  color:var(--text);font-family:'Cinzel',serif;font-size:14px;letter-spacing:2px;
+  cursor:pointer;transition:var(--t);position:relative;overflow:hidden;
+}
+.open-btn::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(168,85,247,.4),rgba(34,211,238,.2));opacity:0;transition:var(--t);}
+.open-btn:hover::before{opacity:1;}
+.open-btn:disabled{opacity:.35;cursor:not-allowed;pointer-events:none;}
+.open-btn span{position:relative;z-index:1;}
+
+/* FLASH */
+#flash{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:999;transition:opacity .1s;}
+
+/* CARD REVEAL */
+#card-area{width:100%;perspective:1000px;display:none;}
+.card-flip{width:100%;transform-style:preserve-3d;transition:transform .7s cubic-bezier(.4,0,.2,1);transform:rotateY(90deg);}
+.card-flip.flipped{transform:rotateY(0deg);}
+.loot-card{
+  width:100%;border-radius:var(--radius);padding:24px;
+  background:var(--glass);backdrop-filter:blur(30px);
+  border:1px solid var(--border);
+  position:relative;overflow:hidden;
+}
+/* Rarity borders */
+.loot-card.r-C{border-color:rgba(148,163,184,.3);box-shadow:0 0 20px rgba(148,163,184,.1);}
+.loot-card.r-PC{border-color:rgba(74,222,128,.4);box-shadow:0 0 25px rgba(74,222,128,.15),inset 0 0 30px rgba(74,222,128,.05);}
+.loot-card.r-R{border-color:rgba(34,211,238,.5);box-shadow:0 0 30px rgba(34,211,238,.2),inset 0 0 40px rgba(34,211,238,.08);}
+.loot-card.r-TR{border-color:rgba(168,85,247,.7);box-shadow:0 0 40px rgba(168,85,247,.35),inset 0 0 60px rgba(168,85,247,.1);}
+.loot-card.r-L{border-color:rgba(249,115,22,.8);box-shadow:0 0 60px rgba(249,115,22,.4),0 0 120px rgba(249,115,22,.2),inset 0 0 80px rgba(249,115,22,.1);}
+/* Shimmer TR */
+.loot-card.r-TR::before{content:'';position:absolute;inset:0;background:linear-gradient(105deg,transparent 40%,rgba(168,85,247,.12) 50%,transparent 60%);background-size:200% 100%;animation:shimmer 3s ease-in-out infinite;}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+/* Legendary fire */
+.loot-card.r-L::before{content:'';position:absolute;inset:0;background:linear-gradient(105deg,transparent 35%,rgba(249,115,22,.18) 50%,rgba(251,191,36,.1) 55%,transparent 65%);background-size:300% 100%;animation:fire-shimmer 2s ease-in-out infinite;}
+@keyframes fire-shimmer{0%{background-position:300% 0}100%{background-position:-300% 0}}
+/* Particles L + A */
+.particle{position:absolute;border-radius:50%;pointer-events:none;animation:float var(--d,4s) ease-in-out infinite var(--delay,0s);}
+@keyframes float{0%{transform:translateY(0) translateX(0) scale(1);opacity:.8}50%{transform:translateY(-30px) translateX(var(--x,10px)) scale(1.3);opacity:.4}100%{transform:translateY(-60px) translateX(calc(var(--x,10px)*2)) scale(0);opacity:0}}
+/* Artefact card */
+.loot-card.r-A{
+  border-color:rgba(225,29,72,.9);
+  box-shadow:0 0 80px rgba(225,29,72,.5),0 0 160px rgba(225,29,72,.2),inset 0 0 100px rgba(225,29,72,.08);
+  background:rgba(20,4,12,.85);
+}
+.loot-card.r-A::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(105deg,transparent 25%,rgba(225,29,72,.22) 40%,rgba(251,191,36,.15) 50%,rgba(168,85,247,.12) 60%,transparent 75%);
+  background-size:400% 100%;animation:artefact-wave 1.8s linear infinite;
+}
+@keyframes artefact-wave{0%{background-position:400% 0}100%{background-position:-400% 0}}
+.loot-card.r-A::after{
+  content:'';position:absolute;inset:-1px;border-radius:var(--radius);
+  background:linear-gradient(135deg,#fbbf24,#e11d48,#a855f7,#fbbf24);
+  background-size:300% 300%;animation:border-burn 2s linear infinite;
+  -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
+  -webkit-mask-composite:xor;mask-composite:exclude;padding:1px;pointer-events:none;
+}
+@keyframes border-burn{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+.card-name.artefact-glow{animation:artefact-pulse 1.2s ease-in-out infinite;}
+@keyframes artefact-pulse{
+  0%,100%{text-shadow:0 0 10px rgba(225,29,72,.6),0 0 20px rgba(225,29,72,.3)}
+  50%{text-shadow:0 0 30px rgba(225,29,72,1),0 0 60px rgba(251,191,36,.7),0 0 100px rgba(168,85,247,.4)}
+}
+.rc-A{color:var(--c-a);}
+/* Fragment chip */
+.fragment-chip{
+  display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:8px;
+  border:1px solid rgba(34,211,238,.3);background:rgba(34,211,238,.07);font-size:11px;color:var(--c-r);cursor:pointer;transition:var(--t);
+}
+.fragment-chip:hover{background:rgba(34,211,238,.15);}
+/* Completion bar */
+.completion-bar{padding:12px 20px;border-bottom:1px solid var(--border);}
+.completion-label{font-size:11px;color:var(--text-dim);margin-bottom:6px;display:flex;justify-content:space-between;}
+.completion-track{height:3px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden;}
+.completion-fill{height:100%;background:linear-gradient(90deg,#a855f7,#22d3ee);border-radius:99px;transition:width .5s ease;}
+/* Recycle btn */
+.recycle-btn{padding:3px 8px;border-radius:6px;border:1px solid rgba(34,211,238,.3);background:transparent;
+  color:var(--c-r);font-size:10px;cursor:pointer;transition:var(--t);flex-shrink:0;}
+.recycle-btn:hover{background:rgba(34,211,238,.1);}
+/* Keys panel extra (fragments) */
+.frag-info{font-size:11px;color:var(--text-dim);margin-top:4px;display:flex;align-items:center;gap:4px;}
+.card-inner{position:relative;z-index:1;display:flex;flex-direction:column;gap:12px;}
+.card-type-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.05);border:1px solid var(--border);}
+.card-rarity{font-size:10px;letter-spacing:3px;font-weight:600;text-transform:uppercase;}
+.card-name{font-family:'Cinzel',serif;font-size:22px;font-weight:700;line-height:1.2;}
+.card-name.legendary-glow{animation:legendary-pulse 1.5s ease-in-out infinite;}
+@keyframes legendary-pulse{0%,100%{text-shadow:0 0 10px rgba(249,115,22,.5)}50%{text-shadow:0 0 30px rgba(249,115,22,1),0 0 60px rgba(251,191,36,.5)}}
+.card-type{font-size:12px;color:var(--text-dim);display:flex;align-items:center;gap:6px;}
+.card-link{margin-top:4px;padding:10px 16px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.04);
+  color:var(--text-dim);font-size:12px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;transition:var(--t);}
+.card-link:hover{color:var(--text);border-color:rgba(255,255,255,.15);}
+.again-btn{
+  width:100%;padding:12px;border-radius:12px;border:1px solid var(--border);
+  background:rgba(255,255,255,.04);color:var(--text-dim);font-family:'Inter',sans-serif;
+  font-size:13px;cursor:pointer;transition:var(--t);margin-top:8px;
+}
+.again-btn:hover{background:rgba(255,255,255,.08);color:var(--text);}
+/* RARITY COLORS */
+.rc-C{color:var(--c-c);}
+.rc-PC{color:var(--c-pc);}
+.rc-R{color:var(--c-r);}
+.rc-TR{color:var(--c-tr);}
+.rc-L{color:var(--c-l);}
+
+/* SIDEBAR */
+#sidebar{
+  position:fixed;top:0;right:-420px;width:380px;height:100vh;
+  background:rgba(6,8,16,.97);border-left:1px solid var(--border);
+  backdrop-filter:blur(40px);z-index:200;transition:right .4s cubic-bezier(.4,0,.2,1);
+  display:flex;flex-direction:column;
+}
+#sidebar.open{right:0;}
+.sidebar-header{padding:20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.sidebar-title{font-family:'Cinzel',serif;font-size:16px;font-weight:700;}
+.close-btn{width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.04);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-dim);transition:var(--t);}
+.close-btn:hover{color:var(--text);background:rgba(255,255,255,.08);}
+.search-wrap{padding:12px 20px;border-bottom:1px solid var(--border);}
+.search-input{width:100%;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:10px;
+  padding:9px 14px;color:var(--text);font-family:'Inter',sans-serif;font-size:13px;outline:none;transition:var(--t);}
+.search-input:focus{border-color:rgba(168,85,247,.4);background:rgba(168,85,247,.05);}
+.search-input::placeholder{color:var(--text-dim);}
+.sidebar-tabs{display:flex;gap:4px;padding:12px 20px;border-bottom:1px solid var(--border);flex-wrap:wrap;}
+.tab-btn{padding:5px 10px;border-radius:8px;border:1px solid var(--border);background:transparent;
+  color:var(--text-dim);font-size:11px;cursor:pointer;transition:var(--t);font-family:'Inter',sans-serif;letter-spacing:.5px;}
+.tab-btn.active,.tab-btn:hover{background:rgba(255,255,255,.07);color:var(--text);}
+.inv-list{flex:1;overflow-y:auto;padding:12px 20px;display:flex;flex-direction:column;gap:6px;}
+.inv-list::-webkit-scrollbar{width:4px;}
+.inv-list::-webkit-scrollbar-track{background:transparent;}
+.inv-list::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:99px;}
+.inv-item{padding:10px 14px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.03);
+  cursor:pointer;transition:var(--t);display:flex;align-items:center;gap:10px;}
+.inv-item:hover{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.12);}
+.inv-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.inv-name{flex:1;font-size:13px;}
+.inv-count{font-size:11px;color:var(--text-dim);font-weight:600;}
+.inv-empty{text-align:center;color:var(--text-dim);padding:40px 20px;font-size:13px;line-height:1.8;}
+.inv-stats{padding:12px 20px;border-top:1px solid var(--border);display:grid;grid-template-columns:repeat(6,1fr);gap:4px;}
+.stat-chip{border-radius:8px;padding:6px 4px;text-align:center;border:1px solid var(--border);background:rgba(255,255,255,.02);}
+.stat-num{font-size:14px;font-weight:700;display:block;}
+.stat-lbl{font-size:9px;color:var(--text-dim);letter-spacing:.5px;}
+
+/* SIDEBAR OVERLAY */
+#overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:199;display:none;}
+#overlay.show{display:block;}
+
+/* MJ PANEL */
+#mj-panel{
+  position:fixed;bottom:20px;left:20px;z-index:300;
+  background:rgba(6,8,16,.95);border:1px solid rgba(249,115,22,.3);border-radius:var(--radius);
+  padding:16px;width:220px;backdrop-filter:blur(30px);display:none;
+}
+#mj-panel.show{display:block;}
+.mj-title{font-family:'Cinzel',serif;font-size:11px;color:var(--c-l);letter-spacing:2px;margin-bottom:12px;}
+.mj-btn{width:100%;padding:9px;border-radius:8px;border:1px solid rgba(249,115,22,.3);background:rgba(249,115,22,.08);
+  color:var(--c-l);font-size:12px;cursor:pointer;margin-bottom:6px;transition:var(--t);font-family:'Inter',sans-serif;}
+.mj-btn:hover{background:rgba(249,115,22,.15);}
+.mj-toggle{display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--text-dim);padding:4px 0;}
+.toggle-switch{position:relative;width:36px;height:20px;}
+.toggle-switch input{opacity:0;width:0;height:0;}
+.toggle-slider{position:absolute;inset:0;background:rgba(255,255,255,.1);border-radius:99px;cursor:pointer;transition:var(--t);}
+.toggle-slider::before{content:'';position:absolute;width:14px;height:14px;left:3px;top:3px;background:#fff;border-radius:50%;transition:var(--t);}
+.toggle-switch input:checked+.toggle-slider{background:var(--c-l);}
+.toggle-switch input:checked+.toggle-slider::before{transform:translateX(16px);}
+
+/* SECRET TRIGGER */
+#secret-zone{position:fixed;bottom:8px;right:8px;width:24px;height:24px;z-index:500;cursor:pointer;opacity:0;}
+
+/* MODAL */
+#modal{position:fixed;inset:0;z-index:400;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.8);backdrop-filter:blur(8px);}
+#modal.show{display:flex;}
+.modal-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px;width:300px;}
+.modal-title{font-family:'Cinzel',serif;font-size:14px;margin-bottom:16px;color:var(--c-l);}
+.modal-input{width:100%;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:10px;
+  padding:10px 14px;color:var(--text);font-size:16px;letter-spacing:4px;text-align:center;outline:none;font-family:'Inter',sans-serif;}
+.modal-input:focus{border-color:rgba(249,115,22,.5);}
+.modal-btns{display:flex;gap:8px;margin-top:14px;}
+.modal-btn{flex:1;padding:10px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.04);
+  color:var(--text);font-size:13px;cursor:pointer;transition:var(--t);font-family:'Inter',sans-serif;}
+.modal-btn.confirm{background:rgba(249,115,22,.15);border-color:rgba(249,115,22,.3);color:var(--c-l);}
+.modal-btn:hover{background:rgba(255,255,255,.08);}
+.modal-btn.confirm:hover{background:rgba(249,115,22,.25);}
+
+/* TOAST */
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);
+  background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:10px 20px;
+  font-size:13px;z-index:600;transition:transform .3s cubic-bezier(.4,0,.2,1);backdrop-filter:blur(20px);white-space:nowrap;}
+#toast.show{transform:translateX(-50%) translateY(0);}
+
+/* FOOTER */
+/* Style du Footer */
+.legal-footer {
+    text-align: center;
+    padding: 20px 10px;
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.3);
+    font-family: sans-serif;
+    margin-top: 40px;
+}
+.legal-footer a {
+    color: rgba(255, 255, 255, 0.4);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+.legal-footer a:hover {
+    color: var(--rarity-L, #ffaa00);
+}
+.legal-links span {
+    cursor: pointer;
+    margin: 0 5px;
+    transition: color 0.2s;
+}
+.legal-links span:hover {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* Style de la Pop-up Juridique */
+.legal-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+}
+.legal-modal-content {
+    background: rgba(20, 20, 25, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 25px;
+    width: 90%;
+    max-width: 500px;
+    position: relative;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+    color: rgba(255, 255, 255, 0.8);
+    font-family: sans-serif;
+}
+.legal-modal-close {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    cursor: pointer;
+    font-size: 1.2rem;
+    color: rgba(255, 255, 255, 0.4);
+    transition: color 0.2s;
+}
+.legal-modal-close:hover {
+    color: white;
+}
+
+
+</style>
+</head>
+<body>
+
+<div class="stars" id="stars"></div>
+<div id="flash"></div>
+
+<div id="app">
+  <header>
+    <div class="logo" id="logo-click">✦ ARCANE VAULT</div>
+    <div class="header-right">
+      <button class="inv-btn" onclick="openSidebar()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        INVENTAIRE
+      </button>
+    </div>
+  </header>
+
+  <div class="keys-panel">
+    <div class="keys-icons" id="keys-icons"></div>
+    <div class="keys-info">
+      <div class="keys-label">CLÉS DISPONIBLES</div>
+      <div class="timer-bar-wrap"><div class="timer-bar" id="timer-bar" style="width:0%"></div></div>
+      <div class="timer-text" id="timer-text">—</div>
+      <div class="frag-info" id="frag-info"></div>
+    </div>
+  </div>
+
+  <div class="chest-area">
+    <div id="chest-wrap" class="chest-wrap">
+      <div class="chest-glow" id="chest-glow"></div>
+      <svg id="chest-svg" viewBox="0 0 140 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="cg1" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#1e1b4b"/><stop offset="1" stop-color="#0f0c24"/></linearGradient>
+          <linearGradient id="cg2" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#312e81"/><stop offset="1" stop-color="#1e1b4b"/></linearGradient>
+          <linearGradient id="cg3" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#a855f7"/><stop offset="1" stop-color="#22d3ee"/></linearGradient>
+        </defs>
+        <!-- Base -->
+        <rect x="20" y="72" width="100" height="50" rx="8" fill="url(#cg1)" stroke="rgba(168,85,247,0.4)" stroke-width="1.5"/>
+        <!-- Lid -->
+        <rect x="20" y="32" width="100" height="44" rx="8" fill="url(#cg2)" stroke="rgba(168,85,247,0.4)" stroke-width="1.5"/>
+        <!-- Lid arch -->
+        <path d="M20 60 Q70 20 120 60" fill="rgba(168,85,247,0.08)" stroke="rgba(168,85,247,0.3)" stroke-width="1"/>
+        <!-- Band -->
+        <rect x="20" y="68" width="100" height="8" fill="rgba(168,85,247,0.15)" stroke="rgba(168,85,247,0.3)" stroke-width="1"/>
+        <!-- Lock -->
+        <rect x="58" y="60" width="24" height="18" rx="4" fill="rgba(168,85,247,0.2)" stroke="rgba(168,85,247,0.6)" stroke-width="1.5"/>
+        <circle cx="70" cy="67" r="5" fill="none" stroke="url(#cg3)" stroke-width="2"/>
+        <rect x="68" y="69" width="4" height="5" rx="1" fill="url(#cg3)"/>
+        <!-- Studs -->
+        <circle cx="34" cy="96" r="4" fill="rgba(168,85,247,0.3)" stroke="rgba(168,85,247,0.5)" stroke-width="1"/>
+        <circle cx="106" cy="96" r="4" fill="rgba(168,85,247,0.3)" stroke="rgba(168,85,247,0.5)" stroke-width="1"/>
+        <circle cx="34" cy="46" r="3" fill="rgba(34,211,238,0.3)" stroke="rgba(34,211,238,0.5)" stroke-width="1"/>
+        <circle cx="106" cy="46" r="3" fill="rgba(34,211,238,0.3)" stroke="rgba(34,211,238,0.5)" stroke-width="1"/>
+        <!-- Runes -->
+        <text x="70" y="110" text-anchor="middle" fill="rgba(168,85,247,0.4)" font-size="12" font-family="serif">ᚱᚢᚾ</text>
+        <text x="70" y="52" text-anchor="middle" fill="rgba(34,211,238,0.35)" font-size="10" font-family="serif">✦ ᚹ ✦</text>
+      </svg>
+    </div>
+    <button class="open-btn" id="open-btn" onclick="openChest()">
+      <span>⚔ OUVRIR LE COFFRE</span>
+    </button>
+  </div>
+
+  <div id="card-area">
+    <div class="card-flip" id="card-flip">
+      <div class="loot-card" id="loot-card">
+        <div class="card-inner" id="card-inner"></div>
+      </div>
+    </div>
+    <button class="again-btn" id="again-btn" onclick="resetToChest()">↩ Ouvrir un autre coffre</button>
+  </div>
+</div>
+
+<!-- Sidebar -->
+<div id="overlay" onclick="closeSidebar()"></div>
+<div id="sidebar">
+  <div class="sidebar-header">
+    <span class="sidebar-title">✦ Inventaire</span>
+    <button class="close-btn" onclick="closeSidebar()">✕</button>
+  </div>
+  <div class="completion-bar">
+    <div class="completion-label">
+      <span id="completion-text">Collection : 0 / 0</span>
+      <span id="completion-pct">0%</span>
+    </div>
+    <div class="completion-track"><div class="completion-fill" id="completion-fill" style="width:0%"></div></div>
+  </div>
+  <div class="search-wrap">
+    <input class="search-input" id="search-input" placeholder="Rechercher un objet…" oninput="renderInventory()">
+  </div>
+  <div class="sidebar-tabs" id="sidebar-tabs"></div>
+  <div class="inv-list" id="inv-list"></div>
+  <div class="inv-stats" id="inv-stats"></div>
+</div>
+
+<!-- Modal MJ -->
+<div id="modal">
+  <div class="modal-box">
+    <div class="modal-title">⚿ CODE MAÎTRE</div>
+    <input class="modal-input" id="mj-input" type="password" maxlength="4" placeholder="····" oninput="checkMJCode()">
+    <div class="modal-btns">
+      <button class="modal-btn" onclick="closeModal()">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<!-- MJ Panel -->
+<div id="mj-panel">
+  <div class="mj-title">⚙ MODE MAÎTRE DU JEU</div>
+  <button class="mj-btn" onclick="mjResetKeys()">⚿ Recharger les 3 Clés</button>
+  <div class="mj-toggle">
+    <span>Forcer Artefact</span>
+    <label class="toggle-switch">
+      <input type="checkbox" id="force-legendary" onchange="updateForceLegendary()">
+      <span class="toggle-slider"></span>
+    </label>
+  </div>
+</div>
+
+<div id="secret-zone" id="secret-zone"></div>
+<div id="toast"></div>
+
+
+<!-- FOOTER JURIDIQUE DISCRET -->
+
+<footer class="legal-footer">
+    <p>© 2026 <a href="https://bolt.host" target="_blank">Moulecake Corporation Company</a>. Tous droits réservés. Une création Arcane Vault.</p>
+    <div class="legal-links">
+        <span onclick="openLegalModal('mentions')">Mentions Légales</span> | 
+        <span onclick="openLegalModal('confidentialite')">Confidentialité & Cookies</span> | 
+        <span onclick="openLegalModal('accessibilite')">Accessibilité</span>
+    </div>
+</footer>
+
+<!-- MODALE JURIDIQUE UNIQUE -->
+<div id="legal-modal" class="legal-modal" style="display: none;">
+    <div class="legal-modal-content">
+        <span class="legal-modal-close" onclick="closeLegalModal()">✕</span>
+        <h3 id="legal-modal-title" style="margin-top: 0; color: var(--rarity-A, #ff4a4a);">Titre</h3>
+        <div id="legal-modal-body" style="line-height: 1.6; font-size: 0.9rem; max-height: 60vh; overflow-y: auto;">
+            Texte...
+        </div>
+    </div>
+</div>
+
+<script>
+// ============================================================
+// DEMO DATA — Remplacez par votre fichier data.js
+// ============================================================
+
+
+// ============================================================
+// VERSIONING — Modifiez le chiffre AVANT le point pour reset total,
+// le chiffre APRÈS pour reset des clés uniquement.
+// ============================================================
+const CURRENT_VERSION = "1.4";
+
+// DROP RATES — C:40 | PC:25 | R:20 | TR:8 | L:5 | A:2
+const DROP_RATES = { C:40, PC:25, R:20, TR:8, L:5, A:2 };
+// Ordre de fallback si pool vide (du plus rare vers le plus commun)
+const RARITY_FALLBACK = ['A','L','TR','R','PC','C'];
+
+const MAX_KEYS = 3;
+const REGEN_MS = 4 * 60 * 60 * 1000;
+const FRAGS_PER_KEY = 5;
+const LSKEY = 'arcane-vault';
+
+// ============================================================
+// WEB AUDIO API
+// ============================================================
+let audioCtx = null;
+function getAudioCtx(){ if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)(); return audioCtx; }
+
+let shakeInterval = null;
+function playClickSound(){
+  // Tension croissante : clics de plus en plus rapides
+  try{
+    const ctx = getAudioCtx();
+    let t = ctx.currentTime;
+    let interval = 0.22;
+    for(let i=0;i<8;i++){
+      const o=ctx.createOscillator(), g=ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.type='square'; o.frequency.value=120+i*15;
+      g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.08,t+0.01); g.gain.linearRampToValueAtTime(0,t+0.05);
+      o.start(t); o.stop(t+0.06);
+      t += interval;
+      interval = Math.max(0.06, interval*0.78);
+    }
+  }catch(e){}
+}
+
+function playImpactSound(){
+  try{
+    const ctx = getAudioCtx();
+    const t = ctx.currentTime;
+    // Sub-bass thump
+    const o=ctx.createOscillator(), g=ctx.createGain();
+    const dist=ctx.createWaveShaper();
+    const curve=new Float32Array(256);
+    for(let i=0;i<256;i++){ const x=i*2/256-1; curve[i]=x*(Math.PI+400)/(Math.PI+400*Math.abs(x)); }
+    dist.curve=curve;
+    o.connect(dist); dist.connect(g); g.connect(ctx.destination);
+    o.type='sine'; o.frequency.setValueAtTime(80,t); o.frequency.exponentialRampToValueAtTime(20,t+0.4);
+    g.gain.setValueAtTime(0.9,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.4);
+    o.start(t); o.stop(t+0.5);
+    // Crack noise
+    const buf=ctx.createBuffer(1,ctx.sampleRate*0.1,ctx.sampleRate);
+    const d=buf.getChannelData(0);
+    for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1);
+    const src=ctx.createBufferSource(), gn=ctx.createGain();
+    src.buffer=buf; gn.gain.setValueAtTime(0.4,t); gn.gain.exponentialRampToValueAtTime(0.001,t+0.08);
+    src.connect(gn); gn.connect(ctx.destination);
+    src.start(t);
+  }catch(e){}
+}
+
+function playRevealSound(rarity){
+  try{
+    const ctx = getAudioCtx();
+    let t = ctx.currentTime + 0.05;
+    const isHighTier = rarity==='L'||rarity==='A';
+    // Arpège ascendant, plus complexe pour L/A
+    const scales = {
+      C:[261,330,392], PC:[261,330,392,523], R:[293,370,440,587],
+      TR:[311,415,523,622,830], L:[329,415,523,659,830,1046,1319], A:[277,370,466,587,740,932,1175,1480]
+    };
+    const notes = scales[rarity]||scales['C'];
+    notes.forEach((freq,i)=>{
+      const o=ctx.createOscillator(), g=ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.type = isHighTier ? 'sine' : 'triangle';
+      o.frequency.value=freq;
+      const delay = i*0.08*(isHighTier?0.9:1);
+      g.gain.setValueAtTime(0,t+delay);
+      g.gain.linearRampToValueAtTime(isHighTier?0.18:0.12,t+delay+0.02);
+      g.gain.exponentialRampToValueAtTime(0.001,t+delay+(isHighTier?0.8:0.5));
+      o.start(t+delay); o.stop(t+delay+(isHighTier?0.9:0.6));
+    });
+    // Pour A: harmonie supplémentaire
+    if(rarity==='A'){
+      setTimeout(()=>{
+        try{
+          const ctx2=getAudioCtx(), t2=ctx2.currentTime+0.1;
+          [277,554,1108].forEach((f,i)=>{
+            const o=ctx2.createOscillator(),g=ctx2.createGain();
+            o.connect(g);g.connect(ctx2.destination);
+            o.type='sine';o.frequency.value=f;
+            g.gain.setValueAtTime(0,t2+i*0.1);
+            g.gain.linearRampToValueAtTime(0.1,t2+i*0.1+0.03);
+            g.gain.exponentialRampToValueAtTime(0.001,t2+i*0.1+1.2);
+            o.start(t2+i*0.1);o.stop(t2+i*0.1+1.3);
+          });
+        }catch(e){}
+      },400);
+    }
+  }catch(e){}
+}
+
+// ============================================================
+// STATE
+// ============================================================
+let state = {
+  version: CURRENT_VERSION,
+  keys: MAX_KEYS,
+  lastRegen: Date.now(),
+  inventory: {},
+  fragments: 0,
+  forceLegendary: false,
+  mjActive: false
+};
+
+function saveState(){ localStorage.setItem(LSKEY, JSON.stringify(state)); }
+
+function loadState(){
+  const raw = localStorage.getItem(LSKEY);
+  if(!raw){ saveState(); return; }
+  try{
+    const saved = JSON.parse(raw);
+    const sv = saved.version||'0.0';
+    const [smaj,smin] = sv.split('.').map(Number);
+    const [cmaj,cmin] = CURRENT_VERSION.split('.').map(Number);
+    if(smaj !== cmaj){
+      // RESET TOTAL
+      state.keys=MAX_KEYS; state.lastRegen=Date.now();
+      state.inventory={}; state.fragments=0;
+      state.version=CURRENT_VERSION; saveState();
+      setTimeout(()=>showToast('🔄 Mise à jour majeure — inventaire réinitialisé'),500);
+    } else {
+      state = Object.assign(state, saved);
+      state.version = CURRENT_VERSION;
+      if(smin !== cmin){
+        // Reset clés uniquement, conserve inventaire
+        state.keys=MAX_KEYS; state.lastRegen=Date.now();
+        saveState();
+        setTimeout(()=>showToast('⚿ Mise à jour — clés rechargées, inventaire conservé'),500);
+      }
+    }
+  }catch(e){ saveState(); }
+}
+
+// ============================================================
+// REGEN
+// ============================================================
+function processRegen(){
+  const now = Date.now();
+  const elapsed = now - state.lastRegen;
+  const charges = Math.floor(elapsed / REGEN_MS);
+  if(charges > 0 && state.keys < MAX_KEYS){
+    state.keys = Math.min(MAX_KEYS, state.keys + charges);
+    state.lastRegen += charges * REGEN_MS;
+    if(state.keys >= MAX_KEYS) state.lastRegen = now;
+    saveState();
+  }
+}
+
+function updateTimer(){
+  processRegen();
+  const keysEl = document.getElementById('keys-icons');
+  const bar = document.getElementById('timer-bar');
+  const txt = document.getElementById('timer-text');
+  const fragEl = document.getElementById('frag-info');
+
+  // Draw keys (can exceed MAX_KEYS via fragments)
+  keysEl.innerHTML='';
+  const displayMax = Math.max(MAX_KEYS, state.keys);
+  for(let i=0;i<displayMax;i++){
+    const d=document.createElement('div');
+    d.className='key-icon '+(i<state.keys?'active':'inactive');
+    d.innerHTML=`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>`;
+    keysEl.appendChild(d);
+  }
+
+  // Timer
+  if(state.keys >= MAX_KEYS){
+    bar.style.width='100%';
+    txt.textContent='Toutes les clés disponibles';
+  } else {
+    const elapsed = Date.now() - state.lastRegen;
+    const remaining = REGEN_MS - elapsed;
+    bar.style.width=Math.min(100,(elapsed/REGEN_MS)*100)+'%';
+    const h=Math.floor(remaining/3600000);
+    const m=Math.floor((remaining%3600000)/60000);
+    const s=Math.floor((remaining%60000)/1000);
+    txt.textContent=`Prochaine clé dans ${h}h ${m.toString().padStart(2,'0')}m ${s.toString().padStart(2,'0')}s`;
+  }
+
+  // Fragments
+  fragEl.innerHTML = state.fragments>0
+    ? `<svg width="10" height="10" viewBox="0 0 24 24" fill="var(--c-r)" style="flex-shrink:0"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+       <span style="color:var(--c-r)">${state.fragments}/${FRAGS_PER_KEY} fragments</span>`
+    : '';
+}
+
+// ============================================================
+// STARS
+// ============================================================
+function initStars(){
+  const c=document.getElementById('stars');
+  for(let i=0;i<80;i++){
+    const s=document.createElement('div');
+    s.className='star';
+    const sz=Math.random()*2+1;
+    s.style.cssText=`width:${sz}px;height:${sz}px;top:${Math.random()*100}%;left:${Math.random()*100}%;--d:${2+Math.random()*4}s;--delay:${-Math.random()*4}s;opacity:${Math.random()*.5}`;
+    c.appendChild(s);
+  }
+}
+
+// ============================================================
+// RARITY TABLES
+// ============================================================
+const RARITY_LABELS = { C:'Commun', PC:'Peu Commun', R:'Rare', TR:'Très Rare', L:'Légendaire', A:'Artefact' };
+const RARITY_COLORS = { C:'var(--c-c)', PC:'var(--c-pc)', R:'var(--c-r)', TR:'var(--c-tr)', L:'var(--c-l)', A:'var(--c-a)' };
+const RARITY_DOTS   = { C:'#94a3b8', PC:'#4ade80', R:'#22d3ee', TR:'#a855f7', L:'#f97316', A:'#e11d48' };
+
+function rollRarity(){
+  const r=Math.random()*100; let cumul=0;
+  for(const [k,v] of Object.entries(DROP_RATES)){ cumul+=v; if(r<=cumul) return k; }
+  return 'C';
+}
+
+function rollLoot(rarity){
+  // Fallback cascade si pool vide pour cette rareté
+  const idx = RARITY_FALLBACK.indexOf(rarity);
+  const candidates = idx>=0 ? RARITY_FALLBACK.slice(idx) : [rarity,'C'];
+  for(const r of candidates){
+    const pool = loots.filter(l=>l.split('|')[3]===r);
+    if(pool.length) return pool[Math.floor(Math.random()*pool.length)];
+  }
+  return loots[Math.floor(Math.random()*loots.length)];
+}
+
+// ============================================================
+// TYPE ICONS
+// ============================================================
+function typeIcon(type){
+  const t=(type||'').toLowerCase();
+  const icons={
+    arme:`<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14.5 2.5l7 7-11 11-4-4 11-11zM2 22l4-4M8 8l2 2"/></svg>`,
+    armure:`<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L4 6v6c0 5.5 3.8 10.7 8 12 4.2-1.3 8-6.5 8-12V6l-8-4z"/></svg>`,
+    anneau:`<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg>`,
+    sceptre:`<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2v20M8 6l4-4 4 4"/><circle cx="12" cy="6" r="3"/></svg>`,
+    potion:`<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 3h6M10 3v4L6 12v7a2 2 0 002 2h8a2 2 0 002-2v-7l-4-5V3"/></svg>`,
+    parchemin:`<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 2h12a2 2 0 012 2v16a2 2 0 01-2 2H6a2 2 0 01-2-2V4a2 2 0 012-2zM8 8h8M8 12h8M8 16h5"/></svg>`,
+    default:`<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`
+  };
+  for(const k of Object.keys(icons)){ if(t.includes(k)) return icons[k]; }
+  return icons.default;
+}
+
+// ============================================================
+// PARTICLES
+// ============================================================
+function createParticles(card, rarity){
+  card.querySelectorAll('.particle').forEach(p=>p.remove());
+  const palettes={
+    L:['#f97316','#fbbf24','#fb923c','#fde68a'],
+    A:['#e11d48','#fbbf24','#a855f7','#f43f5e','#fff']
+  };
+  const colors = palettes[rarity]||palettes['L'];
+  const count = rarity==='A' ? 24 : 16;
+  for(let i=0;i<count;i++){
+    const p=document.createElement('div');
+    p.className='particle';
+    const sz=3+Math.random()*5;
+    p.style.cssText=`width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};
+      left:${Math.random()*100}%;bottom:${Math.random()*60}%;
+      --d:${2+Math.random()*4}s;--delay:${-Math.random()*4}s;--x:${(Math.random()-.5)*50}px;opacity:.8`;
+    card.appendChild(p);
+  }
+}
+
+// ============================================================
+// OPEN CHEST
+// ============================================================
+let isAnimating=false;
+function openChest(){
+  if(isAnimating||state.keys<=0) return;
+  playClickSound();
+  isAnimating=true;
+  state.keys--;
+  if(state.keys===MAX_KEYS-1) state.lastRegen=Date.now();
+  saveState(); updateTimer();
+
+  const btn=document.getElementById('open-btn');
+  const chest=document.getElementById('chest-svg');
+  const glow=document.getElementById('chest-glow');
+  btn.disabled=true;
+  chest.classList.add('shake');
+  glow.style.animation='breathe 0.3s ease-in-out infinite';
+
+  setTimeout(()=>{
+    const flash=document.getElementById('flash');
+    flash.style.opacity='1';
+    if(navigator.vibrate) navigator.vibrate([80,30,120]);
+    playImpactSound();
+
+    setTimeout(()=>{
+      flash.style.opacity='0';
+      document.getElementById('chest-wrap').style.display='none';
+      btn.style.display='none';
+
+      const rarity = state.forceLegendary ? 'A' : rollRarity();
+      if(state.forceLegendary){
+        state.forceLegendary=false;
+        document.getElementById('force-legendary').checked=false;
+        saveState();
+      }
+      const lootStr=rollLoot(rarity);
+      const [name,link,type,actualRarity] = lootStr.split('|');
+      // Use actualRarity (handles fallback cascade correctly)
+      const finalRarity = actualRarity || rarity;
+
+      state.inventory[lootStr]=(state.inventory[lootStr]||0)+1;
+      saveState();
+
+      playRevealSound(finalRarity);
+      buildCard(name,link,type,finalRarity);
+
+      const ca=document.getElementById('card-area');
+      ca.style.display='block';
+      requestAnimationFrame(()=>requestAnimationFrame(()=>document.getElementById('card-flip').classList.add('flipped')));
+      isAnimating=false;
+    },130);
+  },1500);
+}
+
+function buildCard(name,link,type,rarity){
+  const card=document.getElementById('loot-card');
+  card.className=`loot-card r-${rarity}`;
+  const isHigh=rarity==='L'||rarity==='A';
+  if(isHigh) createParticles(card,rarity);
+  else card.querySelectorAll('.particle').forEach(p=>p.remove());
+
+  const color=RARITY_COLORS[rarity];
+  const icon=typeIcon(type);
+  const nameClass=rarity==='A'?'artefact-glow':rarity==='L'?'legendary-glow':'';
+
+  const linkHTML = (link && link !== '#')
+    ? '<a class="card-link" href="' + link + '" target="_blank" rel="noopener">'
+      + '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>'
+      + 'Voir la fiche</a>'
+    : '';
+  document.getElementById('card-inner').innerHTML =
+    '<div style="display:flex;align-items:center;gap:12px;">'
+    + '<div class="card-type-icon" style="color:' + color + ';border-color:' + color + '33">' + icon + '</div>'
+    + '<div>'
+    + '<div class="card-rarity rc-' + rarity + '">' + (RARITY_LABELS[rarity]||rarity) + '</div>'
+    + '<div class="card-type" style="margin-top:2px">'
+    + '<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" opacity=".5"><circle cx="12" cy="12" r="4"/></svg>' + type
+    + '</div></div></div>'
+    + '<div class="card-name ' + nameClass + '" style="color:' + color + '">' + name + '</div>'
+    + linkHTML;
+}
+
+function resetToChest(){
+  document.getElementById('card-area').style.display='none';
+  document.getElementById('card-flip').classList.remove('flipped');
+  document.getElementById('chest-wrap').style.display='flex';
+  const btn=document.getElementById('open-btn');
+  btn.style.display=''; btn.disabled=state.keys<=0;
+  updateTimer();
+}
+
+// ============================================================
+// INVENTORY SIDEBAR
+// ============================================================
+let activeTab='all';
+function openSidebar(){ document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); renderInventory(); }
+function closeSidebar(){ document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
+
+function recycleByIndex(idx, e){ recycleItem(window._invKeys[idx], e); }
+function recycleItem(lootKey, e){
+  e.stopPropagation();
+  if((state.inventory[lootKey]||0) < 2) return;
+  state.inventory[lootKey]--;
+  state.fragments++;
+  // Convert fragments to keys (can exceed MAX_KEYS)
+  if(state.fragments >= FRAGS_PER_KEY){
+    state.fragments -= FRAGS_PER_KEY;
+    state.keys++;
+    saveState(); updateTimer();
+    showToast('✨ Clé forgée depuis les fragments !');
+    document.getElementById('open-btn').disabled=false;
+  } else {
+    saveState(); updateTimer();
+    showToast(`♻ Fragment récupéré (${state.fragments}/${FRAGS_PER_KEY})`);
+  }
+  renderInventory();
+}
+
+function renderInventory(){
+  const search=document.getElementById('search-input').value.toLowerCase();
+  const entries=Object.entries(state.inventory).filter(([,c])=>c>0);
+
+  // Completion bar
+  const totalUnique=loots.length;
+  const discovered=Object.keys(state.inventory).filter(k=>(state.inventory[k]||0)>0).length;
+  const pct=totalUnique>0?Math.round(discovered/totalUnique*100):0;
+  document.getElementById('completion-text').textContent=`Collection : ${discovered} / ${totalUnique} objets uniques`;
+  document.getElementById('completion-pct').textContent=pct+'%';
+  document.getElementById('completion-fill').style.width=pct+'%';
+
+  // Tabs
+  const tabs=document.getElementById('sidebar-tabs');
+  const tabDefs=[['all','Tout'],['A','Artefact'],['L','Légendaire'],['TR','T. Rare'],['R','Rare'],['PC','P. Commun'],['C','Commun']];
+  tabs.innerHTML=tabDefs.map(([k,l])=>`<button class="tab-btn ${activeTab===k?'active':''}" onclick="setTab('${k}')">${l}</button>`).join('');
+
+  // Filter + sort
+  const order={A:0,L:1,TR:2,R:3,PC:4,C:5};
+  const filtered=entries
+    .filter(([k])=>{ const [n,,,r]=k.split('|'); return (activeTab==='all'||r===activeTab)&&(!search||n.toLowerCase().includes(search)); })
+    .sort(([a],[b])=>{ const ra=a.split('|')[3],rb=b.split('|')[3]; return (order[ra]??9)-(order[rb]??9); });
+
+  const list=document.getElementById('inv-list');
+  if(!filtered.length){
+    list.innerHTML=`<div class="inv-empty">Aucun objet trouvé.<br><br>Ouvrez des coffres pour<br>remplir votre inventaire.</div>`;
+  } else {
+    // Store keys in a temp lookup so onclick can reference by index safely
+    window._invKeys = filtered.map(([k])=>k);
+    list.innerHTML=filtered.map(([k,cnt],idx)=>{
+      const [n,lnk,,rar]=k.split('|');
+      const extraHTML = cnt > 1
+        ? '<span class="inv-count rc-' + rar + '">×' + cnt + '</span>'
+          + '<button class="recycle-btn" onclick="recycleByIndex(' + idx + ',event)" title="Recycler un doublon">♻</button>'
+        : '';
+      return '<div class="inv-item" onclick="window.open(\'' + lnk.replace(/'/g,"\\'") + '\',\'_blank\')">'
+        + '<div class="inv-dot" style="background:' + (RARITY_DOTS[rar]||'#666') + '"></div>'
+        + '<span class="inv-name">' + n + '</span>'
+        + extraHTML
+        + '</div>';
+    }).join('');
+  }
+
+  // Stats
+  const stats={A:0,L:0,TR:0,R:0,PC:0,C:0};
+  Object.keys(state.inventory).filter(k=>state.inventory[k]>0).forEach(k=>{ const r=k.split('|')[3]; if(stats[r]!==undefined) stats[r]++; });
+  document.getElementById('inv-stats').innerHTML=Object.entries(stats).map(([k,v])=>`
+    <div class="stat-chip"><span class="stat-num rc-${k}">${v}</span><span class="stat-lbl">${k}</span></div>`).join('');
+}
+
+function setTab(t){ activeTab=t; renderInventory(); }
+
+// ============================================================
+// MJ / SECRET
+// ============================================================
+function openMJModal(){
+  document.getElementById('modal').classList.add('show');
+  document.getElementById('mj-input').value='';
+  document.getElementById('mj-input').focus();
+}
+let logoClicks=0, logoTimer=null;
+document.getElementById('logo-click').addEventListener('click',()=>{
+  logoClicks++;
+  clearTimeout(logoTimer);
+  logoTimer=setTimeout(()=>logoClicks=0,1500);
+  if(logoClicks>=5){ logoClicks=0; openMJModal(); }
+});
+let invBtnClicks=0, invBtnTimer=null;
+document.querySelector('.inv-btn').addEventListener('click',()=>{
+  invBtnClicks++;
+  clearTimeout(invBtnTimer);
+  invBtnTimer=setTimeout(()=>invBtnClicks=0,1500);
+  if(invBtnClicks>=5){ invBtnClicks=0; openMJModal(); return; }
+  openSidebar();
+},{capture:true});
+document.getElementById('secret-zone').addEventListener('click',openMJModal);
+
+function checkMJCode(){
+  const v=document.getElementById('mj-input').value;
+  if(v.length===4){
+    if(v==='8416'){
+      closeModal(); state.mjActive=true;
+      document.getElementById('mj-panel').classList.add('show');
+      document.getElementById('force-legendary').checked=state.forceLegendary;
+      showToast('⚙ Mode Maître du Jeu activé');
+    } else {
+      document.getElementById('mj-input').value='';
+      document.getElementById('mj-input').style.borderColor='rgba(239,68,68,.5)';
+      setTimeout(()=>document.getElementById('mj-input').style.borderColor='',800);
+    }
+  }
+}
+function closeModal(){ document.getElementById('modal').classList.remove('show'); }
+function mjResetKeys(){ state.keys=MAX_KEYS; state.lastRegen=Date.now(); saveState(); updateTimer(); document.getElementById('open-btn').disabled=false; showToast('⚿ Clés rechargées !'); }
+function updateForceLegendary(){ state.forceLegendary=document.getElementById('force-legendary').checked; saveState(); showToast(state.forceLegendary?'☆ Prochain drop : ARTEFACT forcé':'Drop aléatoire rétabli'); }
+
+// ============================================================
+// TOAST
+// ============================================================
+let toastTimer=null;
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeModal(); });
+
+// ============================================================
+// INIT
+// ============================================================
+loadState();
+processRegen();
+initStars();
+updateTimer();
+setInterval(updateTimer,1000);
+document.getElementById('open-btn').disabled=state.keys<=0;
+document.getElementById('card-area').style.display='none';
+document.getElementById('chest-wrap').style.display='flex';
+
+
+<!-- FOOTER TEXTES ET LOGIQUE JURIDIQUE -->
+const LEGAL_TEXTS = {
+    mentions: {
+        title: "Mentions Légales",
+        body: "<p>L'application <strong>Arcane Vault</strong> est un outil de simulation de tirages pour jeux de rôle sur table éditée à des fins ludiques par <strong>Moulecake Corporation Company</strong>.</p><p><strong>Hébergement :</strong> Ce site est propulsé de manière statique et gratuite via l'infrastructure globale de GitHub Pages (GitHub, Inc.).</p><p><strong>Propriété :</strong> Les contenus de règles et fiches d'objets magiques restent la propriété exclusive de leurs auteurs respectifs (Wizards of the Coast / AideDD).</p>"
+    },
+    confidentialite: {
+        title: "Confidentialité & Cookies",
+        body: "<p>Chez Moulecake Corp, on respecte vos données. Cette application n'utilise <strong>aucun cookie publicitaire ou traceur tiers</strong>.</p><p><strong>Utilisation du localStorage :</strong> L'application utilise exclusivement la mémoire locale de votre propre navigateur (localStorage) pour enregistrer de manière totalement autonome votre progression de jeu : votre inventaire de JDR, vos fragments de clé accumulés ainsi que le calcul du temps de recharge de vos lancers. <strong>Aucune donnée n'est collectée ou transmise à travers internet.</strong></p>"
+    },
+    accessibilite: {
+        title: "Accessibilité",
+        body: "<p>L'interface de l'Arcane Vault a été optimisée avec un design sombre à fort contraste pour limiter la fatigue oculaire lors des sessions nocturnes de jeu de rôle sur table.</p><p>Le système intègre l'API Web Vibration du navigateur pour donner un retour physique haptique sur les appareils mobiles compatibles lors de la cinématique d'impact du coffre.</p>"
+    }
+};
+
+function openLegalModal(type) {
+    const modal = document.getElementById('legal-modal');
+    const title = document.getElementById('legal-modal-title');
+    const body = document.getElementById('legal-modal-body');
+    
+    if (modal && title && body && LEGAL_TEXTS[type]) {
+        title.innerHTML = LEGAL_TEXTS[type].title;
+        body.innerHTML = LEGAL_TEXTS[type].body;
+        modal.style.display = 'flex';
+    }
+}
+
+function closeLegalModal() {
+    const modal = document.getElementById('legal-modal');
+    if (modal) modal.style.display = 'none';
+}
+
+// Fermer la modale si on clique à côté de la boîte de dialogue
+window.addEventListener('click', function(e) {
+    const modal = document.getElementById('legal-modal');
+    if (e.target === modal) closeLegalModal();
+});
+
+</script>
+</body>
+</html>

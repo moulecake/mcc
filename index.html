@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Coffre des arcanes</title>
+<!-- LIEN DE L'APPLICATION PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1a1a2e">
+
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- Initialisation Firebase globale pour y accéder partout dans script.js -->
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
+      import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
+      import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyBkwZIkmAAuYtZpoVokvhZd5MYlTfkLyww",
+        authDomain: "coffre-des-arcanes.firebaseapp.com",
+        projectId: "coffre-des-arcanes",
+        storageBucket: "coffre-des-arcanes.firebasestorage.app",
+        messagingSenderId: "905578088250",
+        appId: "1:905578088250:web:38f331566593c3b485f203",
+        measurementId: "G-RP2P28DPKD"
+      };
+
+      const app = initializeApp(firebaseConfig);
+      window.auth = getAuth(app);
+      window.db = getFirestore(app);
+      window.GoogleAuthProvider = GoogleAuthProvider;
+      window.signInWithPopup = signInWithPopup;
+      window.signOut = signOut;
+      window.onAuthStateChanged = onAuthStateChanged;
+      window.doc = doc;
+      window.setDoc = setDoc;
+      window.getDoc = getDoc;
+    </script>
+
+    <!-- Scripts de l'application -->
+    <script src="data.js" defer></script>
+    <script src="script.js" defer></script>
+</head>
+<body>
+
+<div class="stars" id="stars"></div>
+<div id="flash"></div>
+<!-- ÉCRAN D'ACCUEIL — Profil Joueur -->
+<div id="welcome-screen">
+  <div class="welcome-box">
+    <div class="welcome-rune">✦</div>
+    <p class="welcome-sub">Bienvenue à l'Académie des Arcanes !</p>
+    <p class="welcome-sub">Les portes du destin s'ouvrent à ceux qui osent entrer.</p>
+    <button id="google-login-btn" class="google-auth-btn">Se connecter avec Google</button>
+    <div id="google-account-container" style="display:none; width:100%; flex-direction:column; align-items:center; gap:6px;">
+      <span id="user-display-name" class="google-user-badge"></span>
+      <a href="javascript:void(0)" class="google-logout-link" onclick="if(window.auth) window.signOut(window.auth)">Se déconnecter</a>
+    </div>
+    <button class="welcome-btn" id="welcome-btn" onclick="submitPseudo()" disabled>
+      <span>⚔ Récupérer votre coffre des arcanes</span>
+    </button>
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        const userDisplay = document.getElementById('user-display-name');
+        const container = document.getElementById('google-account-container');
+        if (userDisplay && container) {
+          const obs = new MutationObserver(() => {
+            container.style.display = (userDisplay.style.display === 'none' || !userDisplay.style.display) ? 'none' : 'flex';
+          });
+          obs.observe(userDisplay, { attributes: true, attributeFilter: ['style'] });
+        }
+      });
+    </script>
+  </div>
+</div>
+
+<div id="app">
+  <header>
+    <div class="logo" id="logo-click">✦ Coffre des arcanes</div>
+    <div class="header-right">
+      <button class="inv-btn" onclick="openSidebar()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        INVENTAIRE
+      </button>
+    </div>
+  </header>
+
+  <div class="keys-panel">
+    <div class="keys-icons" id="keys-icons"></div>
+    <div class="keys-info">
+      <div class="keys-label">CLÉS DISPONIBLES</div>
+      <div class="timer-bar-wrap"><div class="timer-bar" id="timer-bar" style="width:0%"></div></div>
+      <div class="timer-text" id="timer-text">—</div>
+      <div class="frag-info" id="frag-info"></div>
+    </div>
+  </div>
+
+  <div class="chest-area">
+    <div id="chest-wrap" class="chest-wrap">
+      <div class="chest-glow" id="chest-glow"></div>
+      <svg id="chest-svg" viewBox="0 0 140 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="cg1" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#1e1b4b"/><stop offset="1" stop-color="#0f0c24"/></linearGradient>
+          <linearGradient id="cg2" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#312e81"/><stop offset="1" stop-color="#1e1b4b"/></linearGradient>
+          <linearGradient id="cg3" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#a855f7"/><stop offset="1" stop-color="#22d3ee"/></linearGradient>
+        </defs>
+        <!-- Base -->
+        <rect x="20" y="72" width="100" height="50" rx="8" fill="url(#cg1)" stroke="rgba(168,85,247,0.4)" stroke-width="1.5"/>
+        <!-- Lid -->
+        <rect x="20" y="32" width="100" height="44" rx="8" fill="url(#cg2)" stroke="rgba(168,85,247,0.4)" stroke-width="1.5"/>
+        <!-- Lid arch -->
+        <path d="M20 60 Q70 20 120 60" fill="rgba(168,85,247,0.08)" stroke="rgba(168,85,247,0.3)" stroke-width="1"/>
+        <!-- Band -->
+        <rect x="20" y="68" width="100" height="8" fill="rgba(168,85,247,0.15)" stroke="rgba(168,85,247,0.3)" stroke-width="1"/>
+        <!-- Lock -->
+        <rect x="58" y="60" width="24" height="18" rx="4" fill="rgba(168,85,247,0.2)" stroke="rgba(168,85,247,0.6)" stroke-width="1.5"/>
+        <circle cx="70" cy="67" r="5" fill="none" stroke="url(#cg3)" stroke-width="2"/>
+        <rect x="68" y="69" width="4" height="5" rx="1" fill="url(#cg3)"/>
+        <!-- Studs -->
+        <circle cx="34" cy="96" r="4" fill="rgba(168,85,247,0.3)" stroke="rgba(168,85,247,0.5)" stroke-width="1"/>
+        <circle cx="106" cy="96" r="4" fill="rgba(168,85,247,0.3)" stroke="rgba(168,85,247,0.5)" stroke-width="1"/>
+        <circle cx="34" cy="46" r="3" fill="rgba(34,211,238,0.3)" stroke="rgba(34,211,238,0.5)" stroke-width="1"/>
+        <circle cx="106" cy="46" r="3" fill="rgba(34,211,238,0.3)" stroke="rgba(34,211,238,0.5)" stroke-width="1"/>
+        <!-- Runes -->
+        <text x="70" y="110" text-anchor="middle" fill="rgba(168,85,247,0.4)" font-size="12" font-family="serif">ᚱᚢᚾ</text>
+        <text x="70" y="52" text-anchor="middle" fill="rgba(34,211,238,0.35)" font-size="10" font-family="serif">✦ ᚹ ✦</text>
+      </svg>
+    </div>
+    <button class="open-btn" id="open-btn" onclick="openChest()">
+      <span>⚔ OUVRIR LE COFFRE</span>
+    </button>
+  </div>
+
+  <div id="card-area">
+    <div class="card-flip" id="card-flip">
+      <div class="loot-card" id="loot-card">
+        <div class="card-inner" id="card-inner"></div>
+      </div>
+    </div>
+    <button class="again-btn" id="again-btn" onclick="resetToChest()">↩ Ouvrir un autre coffre</button>
+  </div>
+</div>
+
+<!-- Sidebar -->
+<div id="overlay" onclick="closeSidebar()"></div>
+<div id="sidebar">
+  <div class="sidebar-header">
+    <span class="sidebar-title">✦ Inventaire</span>
+    <button class="close-btn" onclick="closeSidebar()">✕</button>
+  </div>
+  <div class="player-badge" id="player-badge"></div>
+  <div class="completion-bar">
+    <div class="completion-label">
+      <span id="completion-text">Collection : 0 / 0</span>
+      <span id="completion-pct">0%</span>
+    </div>
+    <div class="completion-track"><div class="completion-fill" id="completion-fill" style="width:0%"></div></div>
+  </div>
+  <div class="search-wrap">
+    <input class="search-input" id="search-input" placeholder="Rechercher un objet…" oninput="renderInventory()">
+  </div>
+  <div class="sidebar-tabs" id="sidebar-tabs"></div>
+  <div class="inv-list" id="inv-list"></div>
+  <div class="inv-stats" id="inv-stats"></div>
+
+<!-- 🔮 PACTES & GRIMOIRES — Menu accordéon centralisé -->
+<div id="pactes-menu">
+  <button class="pactes-toggle" onclick="togglePactesMenu()">
+    <span>🔮 Pactes &amp; Grimoires</span>
+    <svg id="pactes-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+  </button>
+
+  <div id="pactes-body" class="pactes-body">
+
+    <!-- SOUS-SECTION A : Grimoire de Sauvegarde -->
+    <div class="pacte-item">
+      <button class="pacte-sub-toggle" onclick="togglePacteSection('grimoire')">
+        <span>📖 Grimoire de Sauvegarde</span>
+        <svg class="sub-chevron" id="chev-grimoire" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="pacte-sub-body" id="body-grimoire">
+        <div class="share-section" style="border-top:none;padding-top:4px">
+          <button class="share-btn" style="background:rgba(168,85,247,0.15);border-color:rgba(168,85,247,0.4);color:#a855f7;margin-bottom:8px;" onclick="openSyncModal()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 11-.57-8.38l5.66-5.66"/></svg>
+            ✨ Fenêtre de Synchronisation &amp; Fusion
+          </button>
+          <button class="share-btn" onclick="exportProfileCode()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>
+            Copier mon Code de Profil
+          </button>
+          <button class="share-btn share-btn-load" onclick="toggleLoadInput()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            Charger ma Sauvegarde
+          </button>
+          <div id="load-input-wrap" style="display:none;margin-top:8px;">
+            <div class="share-warning">⚠ Ceci écrasera ton inventaire, tes fragments et tes clés actuels. Action irréversible.</div>
+            <textarea id="load-code-input" class="inspect-textarea" placeholder="Colle ton code AV1-… ici…" rows="3"></textarea>
+            <button class="share-btn share-btn-danger" style="margin-top:6px;width:100%" onclick="runLoad()">💾 Restaurer ce Profil</button>
+          </div>
+          <button class="share-btn share-btn-inspect" onclick="toggleInspectInput()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/><circle cx="11" cy="11" r="3"/></svg>
+            Inspecter un Aventurier
+          </button>
+          <div id="inspect-input-wrap" style="display:none;margin-top:8px;">
+            <textarea id="inspect-code-input" class="inspect-textarea" placeholder="Colle le code AV1-… d'un ami…" rows="3"></textarea>
+            <button class="share-btn share-btn-inspect" style="margin-top:6px;width:100%" onclick="runInspect()">👁 Lancer l'Inspection</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SOUS-SECTION B : Pacte d'Échange -->
+    <div class="pacte-item">
+      <button class="pacte-sub-toggle" id="toggle-pacte" onclick="togglePacteSection('pacte')">
+        <span>⚔ Pacte d'Échange</span>
+        <svg class="sub-chevron" id="chev-pacte" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="pacte-sub-body" id="body-pacte">
+        <div class="share-section" id="trade-section" style="border-top:none;padding-top:4px">
+          <div class="trade-label">Objet à proposer</div>
+          <select id="trade-give-select" class="trade-select">
+            <option value="">— Sélectionner —</option>
+          </select>
+          <div class="trade-label" style="margin-top:8px">Objet désiré en échange</div>
+          <input id="trade-want-input" class="search-input" type="text" placeholder="Nom exact de l'objet…" autocomplete="off">
+          <button class="share-btn share-btn-trade" style="margin-top:10px" onclick="forgeTradeContract()">
+            ⚔ Forger le Contrat Magique de Troc
+          </button>
+          <div id="trade-contract-wrap" style="display:none;margin-top:8px;">
+            <div class="share-warning" style="color:#fbbf24;border-color:rgba(251,191,36,.3);background:rgba(251,191,36,.06);">
+              🔒 L'objet est séquestré. Transmets ce code à ton partenaire.
+            </div>
+            <textarea id="trade-contract-out" class="inspect-textarea" rows="3" readonly></textarea>
+            <button class="share-btn" style="margin-top:6px;width:100%" onclick="copyTradeContract()">📋 Copier le Contrat</button>
+            <button class="share-btn share-btn-danger" style="margin-top:6px;width:100%" onclick="cancelActiveTrade()">↩ Annuler le Troc</button>
+          </div>
+          <div class="trade-label" style="margin-top:12px">Traiter une transaction reçue</div>
+          <textarea id="trade-incoming-input" class="inspect-textarea" placeholder="Colle ici le contrat AV-TRD-… reçu…" rows="3"></textarea>
+          <button class="share-btn share-btn-inspect" style="margin-top:6px;width:100%" onclick="processTradeContract()">📜 Traiter une Transaction</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- fin pactes-body -->
+</div><!-- fin pactes-menu -->
+</div>
+
+
+<!-- Modal MJ -->
+<div id="modal">
+  <div class="modal-box">
+    <div class="modal-title">⚿ CODE MAÎTRE</div>
+    <input class="modal-input" id="mj-input" type="password" maxlength="4" placeholder="····" oninput="checkMJCode()">
+    <div class="modal-btns">
+      <button class="modal-btn" onclick="closeModal()">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<!-- MJ Panel -->
+
+<div id="mj-panel">
+  <div class="mj-title">⚙ MODE MAÎTRE DU JEU</div>
+  <button class="mj-btn" onclick="mjResetKeys()">⚿ Recharger les 3 Clés</button>
+   <button class="mj-btn" onclick="mjRenamePseudo()">✎ Modifier le Pseudo</button>
+   <button class="mj-btn" onclick="mjAddItem()">⚙ Ajouter un Objet (Debug)</button>
+   <button class="mj-btn mj-btn-close" onclick="closeMJPanel()">✕ Fermer le Mode MJ</button>
+  <div class="mj-toggle">
+    <span>Forcer Artefact</span>
+    <label class="toggle-switch">
+      <input type="checkbox" id="force-legendary" onchange="updateForceLegendary()">
+      <span class="toggle-slider"></span>
+    </label>
+  </div>
+</div>
+
+<div id="secret-zone" id="secret-zone"></div>
+<div id="toast"></div>
+
+
+<!-- FOOTER JURIDIQUE DISCRET -->
+
+<footer class="legal-footer">
+    <p>© 2026 <a href="https://moulecakecorpcie.bolt.host" target="_blank">Moulecake Corporation Company</a>. Tous droits réservés. Une création Coffre des arcanes.</p>
+    <div class="legal-links">
+        <span onclick="openLegalModal('mentions')">Mentions Légales</span> | 
+        <span onclick="openLegalModal('confidentialite')">Confidentialité & Cookies</span> | 
+        <span onclick="openLegalModal('accessibilite')">Accessibilité</span> | 
+        <span onclick="openLegalModal('Version')"> Version : <span id="app-version"></span></span>
+    </div>
+</footer>
+
+<!-- MODALE JURIDIQUE UNIQUE -->
+<div id="legal-modal" class="legal-modal" style="display: none;">
+    <div class="legal-modal-content">
+        <span class="legal-modal-close" onclick="closeLegalModal()">✕</span>
+        <h3 id="legal-modal-title" style="margin-top: 0; color: var(--rarity-A, #ff4a4a);">Titre</h3>
+        <div id="legal-modal-body" style="line-height: 1.6; font-size: 0.9rem; max-height: 60vh; overflow-y: auto;">
+            Texte...
+        </div>
+    </div>
+</div>
+
+<!-- FENÊTRE DE SYNCHRONISATION & FUSION (MODAL) -->
+<div id="sync-modal" class="legal-modal" style="display:none;">
+    <div class="legal-modal-content">
+      <span class="legal-modal-close" onclick="closeSyncModal()">✕</span>
+      <h3 style="margin-top:0; color: #a855f7; font-family:'Cinzel',serif;">🔮 Synchronisation &amp; Fusion des Arcanes</h3>
+      <p style="color:var(--text-dim);font-size:12px;margin-bottom:16px;">
+        Fusionnez vos données du navigateur (localStorage) avec votre compte Cloud Google ou importez un ancien code de sauvegarde <strong>AV1-…</strong> pour récupérer vos objets et clés.
+      </p>
+      
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div style="background:rgba(168,85,247,0.08);border:1px solid rgba(168,85,247,0.2);border-radius:12px;padding:12px;">
+          <h4 style="color:#a855f7;font-family:'Cinzel',serif;font-size:13px;margin-bottom:6px;">1. Fusionner localStorage &amp; Cloud</h4>
+          <p style="font-size:11px;color:var(--text-dim);margin-bottom:8px;">Combine les objets de votre stockage local actuel avec votre sauvegarde Cloud Google.</p>
+          <button class="share-btn" style="width:100%;justify-content:center;" onclick="runLocalStorageCloudMerge()">⚡ Fusionner les Inventaires</button>
+        </div>
+
+        <div style="background:rgba(34,211,238,0.08);border:1px solid rgba(34,211,238,0.2);border-radius:12px;padding:12px;">
+          <h4 style="color:#22d3ee;font-family:'Cinzel',serif;font-size:13px;margin-bottom:6px;">2. Importer un code AV1-…</h4>
+          <textarea id="sync-av1-input" class="inspect-textarea" placeholder="Collez votre ancien code AV1-… ici…" rows="3" style="width:100%;margin-bottom:8px;"></textarea>
+          <button class="share-btn share-btn-load" style="width:100%;justify-content:center;" onclick="runAV1SyncImport()">💾 Importer &amp; Fusionner AV1</button>
+        </div>
+
+        <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:12px;padding:12px;">
+          <h4 style="color:var(--text);font-family:'Cinzel',serif;font-size:13px;margin-bottom:6px;">3. Optimisation &amp; Nettoyage</h4>
+          <p style="font-size:11px;color:var(--text-dim);margin-bottom:8px;">Nettoie les doublons corrompus et synchronise l'état actuel avec le Cloud.</p>
+          <button class="share-btn share-btn-inspect" style="width:100%;justify-content:center;" onclick="runCloudOptimization()">✨ Lancer l'Optimisation</button>
+        </div>
+      </div>
+    </div>
+</div>
+
+<!-- Configuration Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
+  import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
+  import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBkwZIkmAAuYtZpoVokvhZd5MYlTfkLyww",
+    authDomain: "coffre-des-arcanes.firebaseapp.com",
+    projectId: "coffre-des-arcanes",
+    storageBucket: "coffre-des-arcanes.firebasestorage.app",
+    messagingSenderId: "905578088250",
+    appId: "1:905578088250:web:38f331566593c3b485f203",
+    measurementId: "G-RP2P28DPKD"
+  };
+
+  // Initialisation
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  // Rendre global pour script.js si besoin
+  window.firebaseAuth = { auth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, db, doc, setDoc, getDoc };
+</script>
+</body>
+</html>
