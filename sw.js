@@ -1,4 +1,4 @@
-const CACHE_NAME = 'arcane-vault-cache-v2.0.0'; // Passage en v2
+const CACHE_NAME = 'arcane-vault-cache-v2.0.1'; // Passage en v2
 const BASE = '/mcc/arcane_vault/';
 const FILES_TO_CACHE = [
   BASE + 'index.html',
