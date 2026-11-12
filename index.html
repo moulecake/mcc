@@ -15,7 +15,7 @@
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
       import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
-      import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
+      import { getFirestore, doc, setDoc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 
       const firebaseConfig = {
         apiKey: "AIzaSyBkwZIkmAAuYtZpoVokvhZd5MYlTfkLyww",
@@ -37,6 +37,8 @@
       window.doc = doc;
       window.setDoc = setDoc;
       window.getDoc = getDoc;
+      window.collection = collection;
+      window.getDocs = getDocs;
     </script>
 
     <!-- Scripts de l'application -->
@@ -47,7 +49,7 @@
 
 <div class="stars" id="stars"></div>
 <div id="flash"></div>
-<!-- ÉCRAN D'ACCUEIL — Profil Joueur -->
+<!-- ÉCRAN D'ACCUEIL — Profil Joueur & Saisie Pseudo -->
 <div id="welcome-screen">
   <div class="welcome-box">
     <div class="welcome-rune">✦</div>
@@ -58,9 +60,17 @@
       <span id="user-display-name" class="google-user-badge"></span>
       <a href="javascript:void(0)" class="google-logout-link" onclick="if(window.auth) window.signOut(window.auth)">Se déconnecter</a>
     </div>
-    <button class="welcome-btn" id="welcome-btn" onclick="submitPseudo()" disabled>
-      <span>⚔ Récupérer votre coffre des arcanes</span>
-    </button>
+
+    <!-- Modale de saisie de pseudo (masquée par défaut tant que non connectée ou si pseudo déjà défini) -->
+    <div id="pseudo-modal-container" style="display:none; width:100%; flex-direction:column; gap:12px; margin-top:12px;">
+      <h3 style="color:#fbbf24; font-family:'Cinzel',serif; font-size:14px; text-align:center;">Nommez votre Mage de l'Académie</h3>
+      <p style="color:var(--text-dim); font-size:11px; text-align:center;">Ce pseudo public sera affiché dans le classement et sera définitivement lié à votre compte Google.</p>
+      <input id="custom-pseudo-input" class="search-input" type="text" placeholder="Entrez votre pseudo public…" maxlength="25" oninput="validateCustomPseudoInput()" style="width:100%; text-align:center; font-family:'Cinzel',serif;" autocomplete="off">
+      <button class="welcome-btn" id="pseudo-submit-btn" onclick="submitCustomPseudo()" disabled>
+        <span>⚔ Entrer dans l'Académie</span>
+      </button>
+    </div>
+
     <script>
       document.addEventListener('DOMContentLoaded', () => {
         const userDisplay = document.getElementById('user-display-name');
@@ -80,6 +90,7 @@
   <header>
     <div class="logo" id="logo-click">✦ Coffre des arcanes</div>
     <div class="header-right">
+      <button id="leaderboard-btn" class="leaderboard-btn" onclick="openLeaderboardModal()" title="Top Mages">🏆</button>
       <button class="inv-btn" onclick="openSidebar()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
         INVENTAIRE
@@ -303,6 +314,20 @@
     </div>
 </div>
 
+<!-- MODALE LEADERBOARD -->
+<div id="leaderboard-modal" class="legal-modal" style="display:none;">
+    <div class="legal-modal-content">
+      <span class="legal-modal-close" onclick="closeLeaderboardModal()">✕</span>
+      <h3 style="margin-top:0; color: #fbbf24; font-family:'Cinzel',serif; text-align:center;">🏆 Top Mages de l'Académie</h3>
+      <p style="color:var(--text-dim);font-size:12px;margin-bottom:16px;text-align:center;">
+        Classement des mages de l'Académie selon le nombre de cartes et d'objets uniques possédés.
+      </p>
+      <div id="leaderboard-list" style="display:flex;flex-direction:column;gap:8px;max-height:60vh;overflow-y:auto;">
+        <!-- Chargement dynamique -->
+      </div>
+    </div>
+</div>
+
 <!-- FENÊTRE DE SYNCHRONISATION & FUSION (MODAL) -->
 <div id="sync-modal" class="legal-modal" style="display:none;">
     <div class="legal-modal-content">
@@ -315,7 +340,8 @@
       <div style="display:flex;flex-direction:column;gap:12px;">
         <div style="background:rgba(168,85,247,0.08);border:1px solid rgba(168,85,247,0.2);border-radius:12px;padding:12px;">
           <h4 style="color:#a855f7;font-family:'Cinzel',serif;font-size:13px;margin-bottom:6px;">1. Fusionner localStorage &amp; Cloud</h4>
-          <p style="font-size:11px;color:var(--text-dim);margin-bottom:8px;">Combine les objets de votre stockage local actuel avec votre sauvegarde Cloud Google.</p>
+          <p style="font-size:11px;color:var(--text-dim);margin-bottom:6px;">Combine les objets de votre stockage local actuel avec votre sauvegarde Cloud Google.</p>
+          <p style="font-size:10px;color:#fbbf24;margin-bottom:8px;">⚠ Attention : Aucun objet existant n'est dupliqué. Les doublons non recyclés au préalable seront perdus.</p>
           <button class="share-btn" style="width:100%;justify-content:center;" onclick="runLocalStorageCloudMerge()">⚡ Fusionner les Inventaires</button>
         </div>
 

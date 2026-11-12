@@ -7,7 +7,7 @@
 // VERSIONING — Modifiez le chiffre AVANT le point pour reset total,
 // le chiffre APRÈS pour reset des clés uniquement.
 // ============================================================
-const CURRENT_VERSION = "2.0.0";
+const CURRENT_VERSION = "2.0.1";
 document.getElementById("app-version").textContent = CURRENT_VERSION;
 
 // DROP RATES — C:40 | PC:25 | R:20 | TR:8 | L:5 | A:2
@@ -759,7 +759,7 @@ const restoreIds = ['completion-bar','search-wrap','sidebar-tabs','inv-list','in
 // ============================================================
 window.onload = function() {
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/mcc/arcane_vault/sw.js')
+    navigator.serviceWorker.register('/coffre_des_arcanes/sw.js')
       .then(reg => {
         console.log('SW enregistré', reg);
         // Vérification automatique des mises à jour du Service Worker
@@ -805,24 +805,30 @@ function bootApp(){
   document.getElementById('chest-wrap').style.display = 'flex';
 }
 
-function validatePseudoInput(){
-  // Obsolète - géré par l'authentification Google
+function validateCustomPseudoInput(){
+  const input = document.getElementById('custom-pseudo-input');
+  const btn = document.getElementById('pseudo-submit-btn');
+  if(!input || !btn) return;
+  const val = input.value.trim();
+  btn.disabled = val.length === 0;
 }
 
-function submitPseudo(){
-  const user = window.auth?.currentUser;
-  if (!user || !user.displayName) {
-    showToast("❌ Veuillez d'abord vous connecter avec Google !");
+async function submitCustomPseudo(){
+  const input = document.getElementById('custom-pseudo-input');
+  if(!input) return;
+  const pseudoVal = input.value.trim();
+  if(pseudoVal.length < 2){
+    showToast("❌ Le pseudo doit contenir au moins 2 caractères");
     return;
   }
-  state.pseudo = user.displayName;
+  state.pseudo = pseudoVal;
   saveState();
-  saveGameDataToCloud();
+  await saveGameDataToCloud();
 
   const welcome = document.getElementById('welcome-screen');
   const appEl = document.getElementById('app');
-  if (welcome) welcome.classList.add('hidden');
-  if (appEl) {
+  if(welcome) welcome.classList.add('hidden');
+  if(appEl){
     appEl.style.visibility = 'visible';
     appEl.style.opacity = '0';
     appEl.style.transition = 'opacity .5s ease';
@@ -830,6 +836,7 @@ function submitPseudo(){
   }
 
   bootApp();
+  showToast("✨ Bienvenue Mage " + pseudoVal + " !");
 }
 
 
@@ -1179,22 +1186,45 @@ if (typeof window.onAuthStateChanged === 'function') {
   window.onAuthStateChanged(window.auth, async (user) => {
     const loginBtn = document.getElementById("google-login-btn");
     const userDisplay = document.getElementById("user-display-name");
-    const welcomeBtn = document.getElementById("welcome-btn");
+    const pseudoContainer = document.getElementById("pseudo-modal-container");
 
     if (user) {
-      console.log("Joueur de l'Académie connecté :", user.displayName);
-      if (loginBtn) loginBtn.innerText = "Se déconnecter";
+      console.log("Joueur de l'Académie connecté :", user.email || user.uid);
+      if (loginBtn) loginBtn.style.display = "none"; // Masquer le bouton de login car connecté
       if (userDisplay) {
-        userDisplay.innerText = user.displayName;
+        userDisplay.innerText = user.email || user.displayName || "Mage Authentifié";
         userDisplay.style.display = "inline";
       }
-      if (welcomeBtn) welcomeBtn.disabled = false;
       await loadGameDataFromCloud(user.uid);
+
+      // Vérifier si le pseudo est déjà défini dans le state ou Firestore
+      if (state.pseudo && state.pseudo.length >= 2) {
+        if (pseudoContainer) pseudoContainer.style.display = "none";
+        const welcome = document.getElementById('welcome-screen');
+        const appEl = document.getElementById('app');
+        if (welcome) welcome.classList.add('hidden');
+        if (appEl) {
+          appEl.style.visibility = 'visible';
+          appEl.style.opacity = '1';
+        }
+        bootApp();
+      } else {
+        // Pas de pseudo défini : afficher la modale de saisie de pseudo bloquante
+        if (pseudoContainer) pseudoContainer.style.display = "flex";
+      }
     } else {
       console.log("Mode Invité / Non connecté");
+      if (loginBtn) loginBtn.style.display = "block";
       if (loginBtn) loginBtn.innerText = "Se connecter avec Google";
       if (userDisplay) userDisplay.style.display = "none";
-      if (welcomeBtn) welcomeBtn.disabled = true;
+      if (pseudoContainer) pseudoContainer.style.display = "none";
+      const welcome = document.getElementById('welcome-screen');
+      if (welcome) welcome.classList.remove('hidden');
+      const appEl = document.getElementById('app');
+      if (appEl) {
+        appEl.style.visibility = 'hidden';
+        appEl.style.opacity = '0';
+      }
     }
   });
 }
@@ -1220,6 +1250,7 @@ async function saveGameDataToCloud() {
   try {
     const userDocRef = window.doc(window.db, "players", window.auth.currentUser.uid);
     await window.setDoc(userDocRef, {
+      pseudo: state.pseudo || "",
       state: state,
       lastUpdated: new Date().toISOString()
     }, { merge: true });
@@ -1237,8 +1268,12 @@ async function loadGameDataFromCloud(uid) {
     if (docSnap.exists()) {
       const data = docSnap.data();
       console.log("Sauvegarde trouvée dans le Cloud :", data);
+      if (data.pseudo) {
+        state.pseudo = data.pseudo;
+      }
       if (data.state) {
         state = Object.assign(state, data.state);
+        if (data.pseudo && !state.pseudo) state.pseudo = data.pseudo;
         if (typeof renderInventory === "function") renderInventory();
         if (typeof updateTimer === "function") updateTimer();
       }
@@ -1273,7 +1308,10 @@ function runLocalStorageCloudMerge() {
     if (localData.inventory) {
       if (!state.inventory) state.inventory = {};
       for (const [item, qty] of Object.entries(localData.inventory)) {
-        state.inventory[item] = (state.inventory[item] || 0) + qty;
+        // Empêcher la duplication : si l'objet n'existe pas encore dans le Cloud/state, on l'ajoute. S'il existe déjà, on ne l'incrémente pas pour éviter la duplication de doublons.
+        if (!state.inventory[item] || state.inventory[item] <= 0) {
+          state.inventory[item] = qty > 0 ? 1 : 0;
+        }
       }
     }
     if (typeof localData.fragments === 'number') {
@@ -1286,7 +1324,7 @@ function runLocalStorageCloudMerge() {
     saveGameDataToCloud();
     if (typeof renderInventory === 'function') renderInventory();
     if (typeof updateTimer === 'function') updateTimer();
-    showToast("⚡ Fusion localStorage & Cloud réussie !");
+    showToast("⚡ Fusion sécurisée effectuée (doublons non recyclés ignorés) !");
     closeSyncModal();
   } catch (e) {
     showToast("❌ Erreur lors de la fusion locale.");
@@ -1335,3 +1373,101 @@ function runCloudOptimization() {
   closeSyncModal();
 }
 // --- FIN GESTION FIREBASE & SAUVEGARDE CLOUD ---
+
+// --- LEADERBOARD & CLASSEMENT DES MAGES ---
+document.addEventListener('DOMContentLoaded', () => {
+  const lbVisited = localStorage.getItem('arcane-lb-visited');
+  const btn = document.getElementById('leaderboard-btn');
+  if (btn && !lbVisited) {
+    btn.classList.add('pulsing');
+  }
+});
+
+async function openLeaderboardModal() {
+  const btn = document.getElementById('leaderboard-btn');
+  if (btn) {
+    btn.classList.remove('pulsing');
+  }
+  localStorage.setItem('arcane-lb-visited', 'true');
+
+  const modal = document.getElementById('leaderboard-modal');
+  const listContainer = document.getElementById('leaderboard-list');
+  if (modal) modal.style.display = 'flex';
+  if (listContainer) {
+    listContainer.innerHTML = '<div style="text-align:center;color:var(--text-dim);padding:20px;">Chargement des arcanes du classement...</div>';
+  }
+
+  try {
+    if (!window.db || !window.collection || !window.getDocs) {
+      throw new Error("Firestore non disponible");
+    }
+    const querySnapshot = await window.getDocs(window.collection(window.db, 'players'));
+    const players = [];
+
+    querySnapshot.forEach((docSnap) => {
+      const data = docSnap.data();
+      const pState = data.state || {};
+      const pseudo = pState.pseudo || data.pseudo || 'Mage Anonyme';
+      const inventory = pState.inventory || {};
+      const discovered = Object.keys(inventory).filter(k => inventory[k] > 0).length;
+      players.push({ pseudo, discovered, inventory });
+    });
+
+    // Trier par ordre décroissant d'objets uniques découverts
+    players.sort((a, b) => b.discovered - a.discovered);
+
+    if (listContainer) {
+      if (players.length === 0) {
+        listContainer.innerHTML = '<div style="text-align:center;color:var(--text-dim);padding:20px;">Aucun mage enregistré pour le moment.</div>';
+        return;
+      }
+
+      const totalUnique = (typeof loots !== 'undefined' && loots.length) ? loots.length : 464;
+      let html = '';
+
+      players.forEach((p, index) => {
+        const rank = index + 1;
+        const pct = totalUnique > 0 ? Math.round((p.discovered / totalUnique) * 100) : 0;
+        let podiumClass = '';
+        if (rank === 1) podiumClass = 'podium-1';
+        else if (rank === 2) podiumClass = 'podium-2';
+        else if (rank === 3) podiumClass = 'podium-3';
+
+        let rankDisplay = `#${rank}`;
+        if (rank === 1) rankDisplay = '👑 1';
+        else if (rank === 2) rankDisplay = '🥈 2';
+        else if (rank === 3) rankDisplay = '🥉 3';
+
+        html += `
+          <div class="lb-row ${podiumClass}">
+            <div class="lb-rank">${rankDisplay}</div>
+            <div class="lb-pseudo" title="${escapeLeaderboardHtml(p.pseudo)}">${escapeLeaderboardHtml(p.pseudo)}</div>
+            <div class="lb-score">${p.discovered} / ${totalUnique} obj.</div>
+            <div class="lb-percent">${pct}%</div>
+          </div>
+        `;
+      });
+
+      listContainer.innerHTML = html;
+    }
+  } catch (err) {
+    console.error("Erreur chargement leaderboard:", err);
+    if (listContainer) {
+      listContainer.innerHTML = '<div style="text-align:center;color:var(--c-a);padding:20px;">❌ Impossible de charger le classement depuis le Cloud.</div>';
+    }
+  }
+}
+
+function closeLeaderboardModal() {
+  const modal = document.getElementById('leaderboard-modal');
+  if (modal) modal.style.display = 'none';
+}
+
+function escapeLeaderboardHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
